@@ -1,0 +1,2573 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Monitoreo MIRFE Flores El Ciprés</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* ── PALETA MONOCROMÁTICA ── */
+        :root {
+            --ink-900: #0d0d0d;
+            --ink-800: #1a1a1a;
+            --ink-700: #2e2e2e;
+            --ink-600: #444444;
+            --ink-500: #666666;
+            --ink-400: #888888;
+            --ink-300: #b3b3b3;
+            --ink-200: #d6d6d6;
+            --ink-100: #f0f0f0;
+            --ink-050: #f8f8f8;
+            --white:   #ffffff;
+
+            /* Semáforo: mínimo color, máximo contraste */
+            --ok:   #2a7a2a;
+            --ok-bg:#e8f5e8;
+            --warn: #7a6a00;
+            --warn-bg:#fdf9e3;
+            --bad:  #8b1a1a;
+            --bad-bg:#fdecea;
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--ink-050);
+            color: var(--ink-800);
+            font-size: 15px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── HEADER ── */
+        .app-header {
+            background: var(--white);
+            color: var(--ink-900);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--ink-200);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-left h1 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin: 0;
+            color: #2a7a2a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--ink-050);
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--ink-200);
+        }
+        .control-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--ink-500);
+        }
+        #month-select {
+            border: none;
+            background: transparent;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--ink-800);
+            outline: none;
+            cursor: pointer;
+        }
+        #repo-status-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: var(--ink-500);
+            color: var(--white);
+        }
+        #repo-status-badge.loaded {
+            background: var(--ok);
+        }
+        .upload-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: var(--ink-100);
+            color: var(--ink-800);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--ink-200);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-btn:hover {
+            background: var(--ink-200);
+        }
+        #file-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #e8f5e8;
+            color: #2a7a2a;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid #c3e6c3;
+        }
+        #clear-file-btn {
+            background: none;
+            border: none;
+            color: #2a7a2a;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* ── MAIN LAYOUT ── */
+        .main-layout {
+            display: flex;
+            height: calc(100vh - 60px);
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 250px;
+            background: var(--white);
+            border-right: 2px solid var(--ink-200);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .sidebar-title {
+            padding: 16px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--ink-500);
+            letter-spacing: 0.5px;
+        }
+        #blocks-container {
+            padding: 0 16px 16px;
+        }
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            background: var(--ink-050);
+        }
+
+        /* ── LOADER ── */
+        .loader-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 32px;
+        }
+        .loader {
+            width: 36px;
+            height: 36px;
+            border: 3px solid var(--ink-200);
+            border-top-color: var(--ink-700);
+            border-radius: 50%;
+            animation: spin .8s linear infinite;
+        }
+        .loader-text {
+            font-size: 0.8rem;
+            color: var(--ink-500);
+            font-weight: 500;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── NAVEGACIÓN DE PESTAÑAS ── */
+        .tab-bar {
+            display: flex;
+            background: var(--white);
+            border-bottom: 2px solid var(--ink-200);
+            padding: 0 16px;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+        .tab-btn {
+            padding: 16px 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--ink-500);
+            border: none;
+            background: none;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            cursor: pointer;
+            transition: color .2s, border-color .2s;
+        }
+        .tab-btn:hover { color: var(--ink-800); }
+        .tab-btn.active {
+            color: #2a7a2a;
+            border-bottom-color: #2a7a2a;
+        }
+
+        /* ── CONTENIDO DE PESTAÑAS ── */
+        .tab-pane { display: none; padding: 16px; }
+        .tab-pane.active { display: block; }
+
+        /* ── SECTORES Y ORGANIZACIÓN DE BLOQUES ── */
+        .sidebar-header-box {
+            border-bottom: 1px solid var(--ink-200);
+            background: var(--white);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .sector-group {
+            margin-bottom: 16px;
+            border-radius: var(--radius-md);
+            background: var(--ink-050);
+            border: 1.5px solid var(--ink-200);
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+        .sector-group-header {
+            background: linear-gradient(135deg, #1b431b, #2a7a2a);
+            color: var(--white);
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+        .sector-badge-title {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .sector-badge-count {
+            font-size: 0.68rem;
+            background: rgba(255, 255, 255, 0.22);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        .sector-blocks-wrap {
+            padding: 10px;
+        }
+        .sector-blocks-wrap .block-card {
+            margin-bottom: 10px;
+            border: 1px solid var(--ink-200);
+        }
+        .sector-blocks-wrap .block-card:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ── BANNER CONTEXTUAL DE VÁLVULA SELECCIONADA ── */
+        .valve-context-banner {
+            background: var(--white);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            border: 1.5px solid var(--ink-200);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+        .valve-context-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .context-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+        .context-sector {
+            background: #e8f5e8;
+            color: #1b5e20;
+            border: 1px solid #c8e6c9;
+        }
+        .context-block {
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+        }
+        .context-valve {
+            background: #fef3c7;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+        .context-variety {
+            background: #f3e8ff;
+            color: #7e22ce;
+            border: 1px solid #e9d5ff;
+        }
+        .sheet-pill-tag {
+            font-size: 0.75rem;
+            color: var(--ink-500);
+            font-weight: 600;
+            background: var(--ink-100);
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+        .meta-highlight-row td {
+            background-color: #f0fdf4 !important;
+            font-weight: 700 !important;
+            color: #166534 !important;
+        }
+
+        /* ── BLOQUES (tarjetas de válvulas) ── */
+        .block-card {
+            background: var(--white);
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            border-radius: var(--radius-lg);
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .block-card:hover {
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+        .block-header {
+            background: var(--ink-800);
+            color: var(--white);
+            padding: 10px 14px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .block-body {
+            padding: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .valve-btn {
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1.5px solid var(--ink-200);
+            background: var(--ink-050);
+            color: var(--ink-600);
+            cursor: pointer;
+            transition: all .15s;
+        }
+        .valve-btn:hover {
+            border-color: var(--ink-500);
+            color: var(--ink-800);
+            background: var(--ink-100);
+        }
+        .valve-btn.active {
+            background: var(--ink-900);
+            color: var(--white);
+            border-color: var(--ink-900);
+        }
+
+        /* ── TABLA (scroll horizontal en móvil) ── */
+        .table-scroll-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            border: 1.5px solid var(--ink-200);
+            background: var(--white);
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.7rem;
+            white-space: nowrap;
+        }
+        .data-table thead th {
+            background: var(--ink-100);
+            color: var(--ink-600);
+            font-weight: 700;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 8px 10px;
+            border-bottom: 2px solid var(--ink-200);
+            position: sticky;
+            top: 0;
+        }
+        .data-table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--ink-100);
+            color: var(--ink-700);
+        }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+        .data-table tbody tr:nth-child(even) td { background: var(--ink-050); }
+        .data-table td:first-child {
+            font-weight: 700;
+            color: var(--ink-800);
+            position: sticky;
+            left: 0;
+            background: inherit;
+            z-index: 1;
+            border-right: 1.5px solid var(--ink-200);
+        }
+        .data-table tbody tr:nth-child(even) td:first-child { background: var(--ink-050); }
+        .data-table tbody tr:nth-child(odd) td:first-child { background: var(--white); }
+
+        /* Colores semáforo en tabla */
+        .cell-ok   { background: var(--ok-bg)   !important; color: var(--ok)   !important; font-weight: 600; }
+        .cell-warn { background: var(--warn-bg)  !important; color: var(--warn) !important; font-weight: 600; }
+        .cell-bad  { background: var(--bad-bg)   !important; color: var(--bad)  !important; font-weight: 600; }
+        .row-label-blue { color: #1a4d8a !important; font-weight: 700 !important; }
+
+        /* ── GRÁFICAS ── */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        @media (min-width: 640px) {
+            .charts-grid { grid-template-columns: 1fr 1fr; }
+        }
+        .chart-card {
+            background: var(--white);
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            transition: box-shadow 0.2s;
+        }
+        .chart-card:hover {
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+        .chart-container {
+            position: relative;
+            height: 220px;
+            width: 100%;
+        }
+        @media (min-width: 640px) {
+            .chart-container { height: 260px; }
+        }
+
+        /* ── REPORTE SEMANAL ── */
+        .report-section {
+            margin-bottom: 16px;
+        }
+        .report-card {
+            background: var(--white);
+            border: 1.5px solid var(--ink-200);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+        .report-card-header {
+            padding: 12px 14px;
+            font-weight: 700;
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .report-card-header.green {
+            background: var(--ok-bg);
+            color: var(--ok);
+            border-bottom: 1.5px solid #c3e6c3;
+        }
+        .report-card-header.red {
+            background: var(--bad-bg);
+            color: var(--bad);
+            border-bottom: 1.5px solid #f5c6c6;
+        }
+        .report-card-header.blue {
+            background: var(--ink-100);
+            color: var(--ink-700);
+            border-bottom: 1.5px solid var(--ink-200);
+        }
+        .report-card-body {
+            padding: 14px;
+        }
+        .big-stat {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: var(--ink-900);
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+        .big-stat-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--ink-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 14px;
+        }
+        .block-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--ink-100);
+            font-size: 0.82rem;
+        }
+        .block-list-item:last-child { border-bottom: none; }
+        .block-list-item .block-name { color: var(--ink-700); }
+        .block-list-item .block-val {
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 2px 10px;
+            border-radius: 20px;
+            background: var(--ink-100);
+            color: var(--ink-700);
+        }
+        .alert-section-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--ink-500);
+            margin: 12px 0 6px;
+        }
+        .alert-section-title:first-child { margin-top: 0; }
+        .valve-badge {
+            display: inline-block;
+            background: var(--bad-bg);
+            color: var(--bad);
+            border: 1px solid #f5c6c6;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            margin: 2px;
+        }
+        .no-alerts {
+            font-size: 0.8rem;
+            color: var(--ok);
+            font-weight: 600;
+        }
+
+        /* Stat cards en gráficas */
+        .stat-cards-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        @media (min-width: 640px) {
+            .stat-cards-row { grid-template-columns: repeat(4, 1fr); }
+        }
+        .stat-mini-card {
+            background: var(--white);
+            border: 1.5px solid var(--ink-200);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            text-align: center;
+        }
+        .stat-mini-card .val {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--ink-900);
+        }
+        .stat-mini-card .lbl {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--ink-400);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-top: 2px;
+        }
+
+        /* Email form */
+        .email-form-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--ink-700);
+            margin-bottom: 6px;
+            display: block;
+        }
+        .email-input {
+            width: 100%;
+            padding: 11px 14px;
+            font-size: 0.85rem;
+            border: 2px solid var(--ink-200);
+            border-radius: var(--radius-sm);
+            background: var(--white);
+            color: var(--ink-800);
+            transition: border-color .2s;
+        }
+        .email-input:focus {
+            outline: none;
+            border-color: var(--ink-600);
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.07);
+        }
+        .btn-primary-dark {
+            width: 100%;
+            padding: 13px;
+            background: var(--ink-900);
+            color: var(--white);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background .15s;
+            margin-top: 12px;
+        }
+        .btn-primary-dark:hover { background: var(--ink-700); }
+        .btn-primary-dark:active { background: var(--ink-600); }
+
+        /* Alertas inline */
+        .inline-alert {
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        .inline-alert.info { background: var(--ink-100); color: var(--ink-600); }
+        .inline-alert.warn { background: var(--warn-bg); color: var(--warn); border: 1px solid #e8d700; }
+        .inline-alert.err  { background: var(--bad-bg);  color: var(--bad); border: 1px solid #f5c6c6; }
+
+        /* Divider */
+        .divider {
+            border: none;
+            border-top: 1.5px solid var(--ink-100);
+            margin: 12px 0;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--ink-300);
+            padding: 24px 16px 32px;
+        }
+
+        /* Vacío */
+        .empty-state {
+            text-align: center;
+            padding: 40px 16px;
+        }
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            color: var(--ink-300);
+            margin-bottom: 12px;
+        }
+        .empty-state p {
+            font-size: 0.85rem;
+            color: var(--ink-400);
+            font-weight: 500;
+        }
+
+        /* ── ESTILOS DE IMPRESIÓN MASIVA (PDF) ── */
+        @media print {
+            .app-header, .sidebar, .tab-bar, #loading, footer, .content-area {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            #print-container {
+                display: block !important;
+                width: 100%;
+            }
+            
+            .print-page {
+                page-break-after: always;
+                display: flex;
+                flex-direction: column;
+                height: 98vh;
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            .print-page:last-child {
+                page-break-after: auto;
+            }
+
+            /* Tabla de Encabezado Formal */
+            .print-header-table {
+                width: 100%;
+                border-collapse: collapse;
+                border: 2px solid black;
+                font-family: Arial, sans-serif;
+                font-size: 8pt;
+                margin-bottom: 5px;
+            }
+            .print-header-table td {
+                border: 1px solid black;
+                padding: 3px;
+                text-align: center;
+                vertical-align: middle;
+            }
+            .title-cell {
+                font-weight: bold;
+                font-size: 9pt;
+                text-align: left !important;
+                padding-left: 10px !important;
+            }
+            
+            /* Contenedor principal de la hoja impresa */
+            .print-content-wrapper {
+                display: flex;
+                flex-direction: column;
+                flex-grow: 1;
+                overflow: hidden;
+            }
+
+            /* Tabla de Datos */
+            .table-scroll-wrap {
+                margin-bottom: 5px !important;
+                flex: 0 0 38% !important;
+                overflow: hidden !important; 
+            }
+            .data-table {
+                border: 1px solid black !important;
+                height: 100%;
+            }
+            .data-table th, .data-table td {
+                border: 1px solid black !important;
+                padding: 3px 4px !important;
+                font-size: 0.75rem !important;
+            }
+
+            /* Gráficas al máximo */
+            .charts-grid {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                flex: 0 0 60% !important;
+                gap: 5px !important;
+                align-content: stretch;
+            }
+            .chart-card {
+                flex: 1 1 48% !important;
+                display: flex;
+                flex-direction: column;
+                margin: 0 !important;
+                padding: 4px !important;
+                border: 1px solid #ccc !important;
+            }
+            .chart-container {
+                flex-grow: 1 !important;
+                height: auto !important;
+                min-height: 100px;
+            }
+            .chart-container img {
+                max-width: 100% !important;
+                max-height: 100% !important;
+                height: auto !important;
+                display: block !important;
+                margin: 0 auto !important;
+            }
+
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+        
+        /* Estado mientras se preparan las gráficas para forzar su renderizado */
+        body.is-printing .app-header, 
+        body.is-printing .sidebar, 
+        body.is-printing .content-area,
+        body.is-printing footer {
+            display: none !important;
+        }
+        body.is-printing #print-container {
+            display: block !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 9999;
+            background: white;
+        }
+        /* ── RESPONSIVE DESIGN (MÓVIL) ── */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: #000;
+            cursor: pointer;
+            padding: 5px;
+            margin-right: 15px;
+        }
+        
+        .mobile-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1040;
+            display: none;
+        }
+        .mobile-overlay.open { display: block; }
+        
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: inline-block; }
+            
+            .app-header {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 10px 15px;
+            }
+            .header-right {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-top: 15px;
+            }
+            
+            /* Sidebar becomes offcanvas */
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -300px;
+                width: 280px;
+                height: 100%;
+                z-index: 1050;
+                transition: left 0.3s ease;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+            }
+            .sidebar.open { left: 0; }
+            
+            .content-area {
+                padding: 15px;
+                width: 100%;
+            }
+            
+            /* Tab bar scrollable */
+            .tab-bar {
+                overflow-x: auto;
+                white-space: nowrap;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 5px;
+                gap: 5px;
+            }
+            .tab-btn { flex-shrink: 0; }
+            
+            /* Data tables scrollable horizontally */
+            .data-table-wrapper, #sheet-content-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                width: 100%;
+            }
+            
+            /* Charts responsive stacking */
+            .chart-row {
+                flex-direction: column;
+            }
+            .chart-container {
+                width: 100%;
+                min-height: 300px;
+            }
+            
+            /* Filters wrapping */
+            .mobile-filters-details {
+                background: white;
+                padding: 10px;
+                border-radius: 8px;
+                border: 1px solid var(--gray-200);
+                margin-bottom: 15px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            }
+            .mobile-filters-details summary {
+                font-weight: 600;
+                cursor: pointer;
+                outline: none;
+                color: var(--ink-900);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="app-header">
+        <div style="display: flex; align-items: center;">
+            <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Abrir menú">
+                <!-- Icono de Hamburguesa de 3 líneas horizontales -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="header-left" style="display: flex; align-items: center; gap: 15px;">
+            <img src="mascota_mirfe.png" alt="Mascota MIRFE" style="height: 80px; width: 80px; object-fit: cover; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.4); border: 3px solid white; background: #fff;">
+            <h1>🌱 Monitoreo MIRFE Flores El Ciprés</h1>
+        </div>
+        <div class="header-right">
+            <div class="header-control">
+                <span class="control-label">MES:</span>
+                <select id="month-select">
+                    <option value="" disabled selected>-- Elige un mes --</option>
+                    <option value="enero">Enero</option>
+                    <option value="febrero">Febrero</option>
+                    <option value="marzo">Marzo</option>
+                    <option value="abril">Abril</option>
+                    <option value="mayo">Mayo</option>
+                    <option value="junio">Junio</option>
+                    <option value="julio">Julio</option>
+                    <option value="agosto">Agosto</option>
+                    <option value="septiembre">Septiembre</option>
+                    <option value="octubre">Octubre</option>
+                    <option value="noviembre">Noviembre</option>
+                    <option value="diciembre">Diciembre</option>
+                </select>
+            </div>
+            
+            <span id="repo-status-badge">SIN CARGAR</span>
+            
+            <label for="file-upload" class="upload-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                </svg>
+                Subir Local
+                <input id="file-upload" type="file" style="display:none" accept=".xlsx,.xlsm,.xls" />
+            </label>
+
+            <div id="file-info" style="display:none;">
+                <span class="file-name" id="file-name">julio.xlsm</span>
+                <button id="clear-file-btn">x</button>
+            </div>
+
+            <!-- Botón de Imprimir Masivo -->
+            <button id="print-btn" class="upload-btn" style="background:#22c55e; color:white; border-color:#16a34a;" onclick="generatePrintAllReport()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2H5zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1z"/>
+                    <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2V7zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+                </svg>
+                Imprimir Todas (PDF)
+            </button>
+        </div>
+    </header>
+
+    <div id="mobile-overlay" class="mobile-overlay"></div>
+    <div class="main-layout">
+        <aside class="sidebar">
+            <div class="sidebar-header-box">
+                <div class="sidebar-title">SECTORES Y BLOQUES</div>
+                <div class="sidebar-sector-filter" id="sidebar-sector-filter-wrap" style="display:none; padding:0 14px 10px;">
+                    <label for="sidebar-sector-select" style="font-size:0.72rem; font-weight:700; color:var(--ink-500); display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">Sector de Riego:</label>
+                    <select id="sidebar-sector-select" class="form-select form-select-sm" style="font-size:0.8rem; font-weight:600; border-radius:8px; border:1.5px solid var(--ink-200); background:#fff; cursor:pointer;">
+                        <option value="all">Todos los sectores</option>
+                    </select>
+                </div>
+            </div>
+            <div id="blocks-container"></div>
+        </aside>
+
+        <main class="content-area">
+            <nav class="tab-bar" id="tab-bar">
+                <button class="tab-btn active" data-tab="valves-view" id="valves-tab">• Vista por Válvula •</button>
+                <button class="tab-btn" data-tab="report-view" id="report-tab">Reporte Semanal</button>
+                <button class="tab-btn" data-tab="graphs-view" id="graphs-tab">Gráficas Comparativas</button>
+            </nav>
+
+            <div id="loading" style="display:none;" class="loader-wrap">
+                <div class="loader"></div>
+                <span class="loader-text">Cargando datos…</span>
+            </div>
+
+            <div id="valves-view" class="tab-pane active">
+                <div id="sheet-content-container"></div>
+            </div>
+
+            <div id="report-view" class="tab-pane">
+                <div class="empty-state">
+                    <p>Carga un archivo Excel para generar el reporte semanal.</p>
+                </div>
+            </div>
+
+            <div id="graphs-view" class="tab-pane">
+                <details class="mobile-filters-details" open>
+                    <summary>Filtros de Gráficas</summary>
+                    <div style="margin-top: 15px; margin-bottom: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div>
+                            <label for="filter-graphs-sector" style="font-size:0.8rem; font-weight:600;">Sector:</label>
+                            <select id="filter-graphs-sector" style="padding: 4px; border-radius: 4px; border: 1px solid #ccc; min-width: 120px;">
+                                <option value="">Todos</option>
+                                <option value="8">Sector 8</option>
+                                <option value="9">Sector 9</option>
+                                <option value="10">Sector 10</option>
+                                <option value="11">Sector 11</option>
+                                <option value="12">Sector 12</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filter-graphs-bloque" style="font-size:0.8rem; font-weight:600;">Bloque:</label>
+                            <select id="filter-graphs-bloque" style="padding: 4px; border-radius: 4px; border: 1px solid #ccc; min-width: 120px;">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filter-graphs-valvula" style="font-size:0.8rem; font-weight:600;">Válvula:</label>
+                            <select id="filter-graphs-valvula" style="padding: 4px; border-radius: 4px; border: 1px solid #ccc; min-width: 120px;">
+                                <option value="">Todas</option>
+                            </select>
+                        </div>
+                    </div>
+                </details>
+                
+                <div id="graphs-view-content">
+                    <div class="empty-state">
+                        <p>Carga un archivo Excel para ver las gráficas comparativas.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer>Desarrollado por Victor Fabian Intencipa y Juan Esteban Trujillo</footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        /* ── ESTADO GLOBAL ── */
+        const fileUpload = document.getElementById('file-upload');
+        const blocksContainer = document.getElementById('blocks-container');
+        const sheetContentContainer = document.getElementById('sheet-content-container');
+        const reportContainer = document.getElementById('report-view');
+        const graphsContainer = document.getElementById('graphs-view');
+        const loadingEl = document.getElementById('loading');
+        const fileInfoEl = document.getElementById('file-info');
+        const fileNameEl = document.getElementById('file-name');
+        const clearFileBtn = document.getElementById('clear-file-btn');
+        const monthSelect = document.getElementById('month-select');
+        const repoStatusBadge = document.getElementById('repo-status-badge');
+        const repoStatusMsg = document.getElementById('repo-load-status-msg');
+
+        let activeCharts = [];
+        let workbookData = null;
+        let sheetsMetadata = {};
+        let validSheetMetas = [];
+        let currentHierarchy = null;
+
+        if (window.ChartAnnotation) Chart.register(window.ChartAnnotation);
+
+        /* ── NAVEGACIÓN DE PESTAÑAS ── */
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+                if (btn.dataset.tab === 'report-view' && workbookData) generateWeeklyReport();
+                if (btn.dataset.tab === 'graphs-view' && workbookData) generateGraphsReport();
+            });
+        });
+
+        /* ── EVENTOS DE CARGA ── */
+        fileUpload.addEventListener('change', handleFile);
+        clearFileBtn.addEventListener('click', () => clearFile(true));
+        monthSelect.addEventListener('change', e => { if (e.target.value) loadExcelByMonth(e.target.value); });
+
+        /* ── INDEXEDDB ── */
+        const dbName = "CamasPilotoDB", storeName = "excelFiles";
+        function getDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(dbName, 1);
+                req.onupgradeneeded = e => { const db = e.target.result; if (!db.objectStoreNames.contains(storeName)) db.createObjectStore(storeName); };
+                req.onsuccess = e => resolve(e.target.result);
+                req.onerror = e => reject(e.target.error);
+            });
+        }
+        function saveFileToDB(filename, arrayBuffer) {
+            return getDB().then(db => new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, "readwrite");
+                const store = tx.objectStore(storeName);
+                const req = store.put({ filename, data: arrayBuffer }, "activeFile");
+                req.onsuccess = () => resolve();
+                req.onerror = e => reject(e.target.error);
+            })).catch(err => console.warn("IndexedDB save error:", err));
+        }
+        function getFileFromDB() {
+            return getDB().then(db => new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, "readonly");
+                const req = tx.objectStore(storeName).get("activeFile");
+                req.onsuccess = e => resolve(e.target.result);
+                req.onerror = e => reject(e.target.error);
+            })).catch(() => null);
+        }
+        function deleteFileFromDB() {
+            return getDB().then(db => new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, "readwrite");
+                const req = tx.objectStore(storeName).delete("activeFile");
+                req.onsuccess = () => resolve();
+                req.onerror = e => reject(e.target.error);
+            })).catch(() => {});
+        }
+
+        /* ── CARGA DESDE EL SERVIDOR (GITHUB PAGES) ── */
+        async function loadExcelByMonth(month) {
+            repoStatusBadge.textContent = 'Cargando…';
+            repoStatusBadge.classList.remove('loaded');
+            if(repoStatusMsg) repoStatusMsg.textContent = `Buscando archivo de ${month}…`;
+            clearFile(false);
+            loadingEl.style.display = 'flex';
+
+            const tryFetch = async (ext) => {
+                const fileName = `${month}${ext}`;
+                const r = await fetch(`./${fileName}?t=${new Date().getTime()}`);
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return { buf: await r.arrayBuffer(), fileName };
+            };
+
+            try {
+                let result;
+                try {
+                    result = await tryFetch('.xlsx');
+                } catch (e) {
+                    try {
+                        result = await tryFetch('.xlsm');
+                    } catch (e2) {
+                        result = await tryFetch('.xls');
+                    }
+                }
+                
+                processAndDisplayWorkbook(result.buf, result.fileName);
+                saveFileToDB(result.fileName, result.buf);
+                repoStatusBadge.textContent = '✓ Cargado';
+                repoStatusBadge.classList.add('loaded');
+                if(repoStatusMsg) repoStatusMsg.textContent = `Archivo ${result.fileName} listo.`;
+            } catch (err) {
+                repoStatusBadge.textContent = 'Error';
+                if(repoStatusMsg) repoStatusMsg.textContent = `No se encontró el archivo ${month} (.xlsx/.xlsm) en GitHub. Verifica haberlo subido.`;
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+
+        /* ── MANEJO DE ARCHIVOS LOCALES ── */
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            clearFile(false);
+            loadingEl.style.display = 'flex';
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const buf = ev.target.result;
+                    processAndDisplayWorkbook(buf, file.name);
+                    saveFileToDB(file.name, buf);
+                } catch (err) {
+                    console.error(err);
+                    showInlineError(sheetContentContainer, 'Error al procesar el archivo. Asegúrate de que es un Excel válido.');
+                } finally {
+                    loadingEl.style.display = 'none';
+                }
+            };
+            reader.onerror = () => { loadingEl.style.display = 'none'; showInlineError(sheetContentContainer, 'Error al leer el archivo.'); };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function clearFile(deleteFromDB = true) {
+            workbookData = null;
+            sheetsMetadata = {};
+            validSheetMetas = [];
+            currentHierarchy = null;
+            blocksContainer.innerHTML = '';
+            sheetContentContainer.innerHTML = '';
+            activeCharts.forEach(c => c.destroy());
+            activeCharts = [];
+            fileInfoEl.style.display = 'none';
+            fileUpload.value = '';
+            const sectorFilterWrap = document.getElementById('sidebar-sector-filter-wrap');
+            if (sectorFilterWrap) sectorFilterWrap.style.display = 'none';
+            const filterSecEl = document.getElementById('filter-graphs-sector');
+            if (filterSecEl) { filterSecEl.innerHTML = '<option value="">Todos los sectores</option>'; filterSecEl.dataset.initialized = 'false'; }
+            const filterBlqEl = document.getElementById('filter-graphs-bloque');
+            if (filterBlqEl) filterBlqEl.innerHTML = '<option value="">Todos los bloques</option>';
+            const filterValEl = document.getElementById('filter-graphs-valvula');
+            if (filterValEl) filterValEl.innerHTML = '<option value="">Todas las válvulas</option>';
+            reportContainer.innerHTML = `<div class="empty-state"><p>Carga un archivo Excel para generar el reporte semanal.</p></div>`;
+            const contentDiv = document.getElementById('graphs-view-content');
+            if (contentDiv) contentDiv.innerHTML = `<div class="empty-state"><p>Carga un archivo Excel para ver las gráficas comparativas.</p></div>`;
+            if (deleteFromDB) deleteFileFromDB();
+        }
+
+        function showInlineError(container, msg) {
+            container.innerHTML = `<div class="inline-alert err" style="margin:16px;">${msg}</div>`;
+        }
+
+        /* ── CATÁLOGO MAESTRO FLORES EL CIPRÉS ── */
+        const CIPRES_VALVE_CATALOG = [
+            // Sector 1
+            { sector: "1", block: "1", valve: 1, variety: "Freedom" },
+            { sector: "1", block: "1", valve: 2, variety: "Queenberry" },
+            { sector: "1", block: "1", valve: 28, variety: "Queenberry" },
+            { sector: "1", block: "1", valve: 3, variety: "Queenberry" },
+            { sector: "1", block: "1", valve: 4, variety: "Momentum" },
+            { sector: "1", block: "2", valve: 30, variety: "Orange Crush" },
+            { sector: "1", block: "2", valve: 5, variety: "Alive" },
+            { sector: "1", block: "2", valve: 6, variety: "Vainilla" },
+            { sector: "1", block: "2", valve: 7, variety: "Amarela" },
+            { sector: "1", block: "2", valve: 8, variety: "Blessing, Frutteto" },
+            { sector: "1", block: "3", valve: 10, variety: "Ameli, Brave in Dark" },
+            { sector: "1", block: "3", valve: 11, variety: "Freedom" },
+            { sector: "1", block: "3", valve: 12, variety: "Freedom" },
+            { sector: "1", block: "3", valve: 9, variety: "Ameli, Brave in Dark" },
+            { sector: "1", block: "4", valve: 13, variety: "Ameli, Aperol" },
+            { sector: "1", block: "4", valve: 14, variety: "Aperol" },
+            { sector: "1", block: "4", valve: 15, variety: "Marilyn, Moonwalk" },
+            { sector: "1", block: "4", valve: 34, variety: "Blessing" },
+
+            // Sector 2
+            { sector: "2", block: "5", valve: 16, variety: "Freedom" },
+            { sector: "2", block: "5", valve: 17, variety: "Freedom" },
+            { sector: "2", block: "5", valve: 18, variety: "Freedom" },
+            { sector: "2", block: "5", valve: 24, variety: "Freedom" },
+            { sector: "2", block: "6", valve: 19, variety: "Freedom" },
+            { sector: "2", block: "6", valve: 20, variety: "Freedom" },
+            { sector: "2", block: "6", valve: 21, variety: "Freedom" },
+            { sector: "2", block: "7", valve: 22, variety: "Freedom" },
+            { sector: "2", block: "7", valve: 23, variety: "Freedom" },
+            { sector: "2", block: "7", valve: 25, variety: "Freedom" },
+            { sector: "2", block: "8", valve: 26, variety: "Vainilla" },
+            { sector: "2", block: "8", valve: 27, variety: "Glacier, Vainilla" },
+
+            // Sector 3
+            { sector: "3", block: "11", valve: 1, variety: "Freedom" },
+            { sector: "3", block: "11", valve: 2, variety: "Freedom" },
+            { sector: "3", block: "11", valve: 3, variety: "Freedom" },
+            { sector: "3", block: "11", valve: 4, variety: "Freedom" },
+            { sector: "3", block: "12", valve: 5, variety: "Freedom" },
+            { sector: "3", block: "12", valve: 6, variety: "Freedom" },
+            { sector: "3", block: "12", valve: 7, variety: "Aperol" },
+            { sector: "3", block: "12", valve: 8, variety: "Aperol, Kendal" },
+            { sector: "3", block: "15", valve: 17, variety: "Freedom" },
+            { sector: "3", block: "15", valve: 19, variety: "Freedom" },
+            { sector: "3", block: "15B", valve: 20, variety: "Freedom" },
+            { sector: "3", block: "15B", valve: 22, variety: "Freedom" },
+            { sector: "3", block: "16", valve: 23, variety: "Freedom" },
+            { sector: "3", block: "16", valve: 24, variety: "Freedom" },
+            { sector: "3", block: "16", valve: 27, variety: "Freedom" },
+            { sector: "3", block: "16", valve: 62, variety: "Freedom" },
+            { sector: "3", block: "17", valve: 30, variety: "Ameli, Momentum" },
+            { sector: "3", block: "17", valve: 31, variety: "Ameli, Momentum" },
+            { sector: "3", block: "17", valve: 63, variety: "Momentum" },
+
+            // Sector 4
+            { sector: "4", block: "13", valve: 10, variety: "Marilyn" },
+            { sector: "4", block: "13", valve: 11, variety: "Blessing" },
+            { sector: "4", block: "13", valve: 12, variety: "Alive, Satina" },
+            { sector: "4", block: "13", valve: 13, variety: "Blessing, Satina" },
+            { sector: "4", block: "13", valve: 25, variety: "Freedom" },
+            { sector: "4", block: "14", valve: 14, variety: "Freedom" },
+            { sector: "4", block: "14", valve: 15, variety: "Freedom" },
+            { sector: "4", block: "14", valve: 16, variety: "Freedom" },
+            { sector: "4", block: "18", valve: 33, variety: "Queenberry" },
+            { sector: "4", block: "18", valve: 34, variety: "Amarela" },
+            { sector: "4", block: "18", valve: 64, variety: "Deep Purple" },
+            { sector: "4", block: "24", valve: 28, variety: "Alive" },
+            { sector: "4", block: "24", valve: 71, variety: "Blessing, Kendal" },
+            { sector: "4", block: "24", valve: 72, variety: "Kendal" },
+            { sector: "4", block: "24", valve: 73, variety: "Alive" },
+            { sector: "4", block: "25", valve: 76, variety: "Jacaranda" },
+            { sector: "4", block: "25", valve: 77, variety: "Kendal" },
+            { sector: "4", block: "25", valve: 78, variety: "Satina" },
+            { sector: "4", block: "25", valve: 79, variety: "Sugar Doll" },
+            { sector: "4", block: "26", valve: 82, variety: "Blessing" },
+            { sector: "4", block: "26", valve: 83, variety: "Clementina" },
+            { sector: "4", block: "26", valve: 84, variety: "Aperol" },
+            { sector: "4", block: "26", valve: 85, variety: "Moonwalk" },
+
+            // Sector 5
+            { sector: "5", block: "19", valve: 35, variety: "Freedom" },
+            { sector: "5", block: "19", valve: 36, variety: "Glacier, Satina" },
+            { sector: "5", block: "19", valve: 37, variety: "Glacier" },
+            { sector: "5", block: "19", valve: 38, variety: "Momentum" },
+            { sector: "5", block: "20", valve: 39, variety: "Freedom" },
+            { sector: "5", block: "20", valve: 40, variety: "Freedom" },
+            { sector: "5", block: "20", valve: 41, variety: "Freedom" },
+            { sector: "5", block: "20", valve: 42, variety: "Freedom" },
+            { sector: "5", block: "21", valve: 43, variety: "Freedom" },
+            { sector: "5", block: "21", valve: 44, variety: "Freedom" },
+            { sector: "5", block: "21", valve: 45, variety: "Freedom" },
+            { sector: "5", block: "22", valve: 46, variety: "Vainilla" },
+            { sector: "5", block: "22", valve: 47, variety: "Vainilla" },
+            { sector: "5", block: "22", valve: 48, variety: "Aperol" },
+            { sector: "5", block: "22", valve: 65, variety: "Vainilla" },
+            { sector: "5", block: "22", valve: 68, variety: "Aperol" },
+            { sector: "5", block: "23", valve: 49, variety: "Jacaranda, Satina" },
+            { sector: "5", block: "23", valve: 50, variety: "Jacaranda" },
+            { sector: "5", block: "23", valve: 51, variety: "Blessing" },
+            { sector: "5", block: "23", valve: 52, variety: "Amarela" }
+        ];
+
+        /* Límites agronómicos de referencia por variedad */
+        const VARIETY_TARGET_LIMITS = {
+            'Freedom': { ce: [2.4, 3.0], no3: [180, 220] },
+            'Alive': { ce: [1.8, 2.4], no3: [160, 200] },
+            'Amarela': { ce: [1.7, 2.3], no3: [180, 220] },
+            'Vainilla': { ce: [1.8, 2.4], no3: [180, 220] },
+            'Kendal': { ce: [1.8, 2.5], no3: [180, 220] },
+            'Ameli': { ce: [1.8, 2.4], no3: [160, 200] },
+            'Jacaranda': { ce: [2.4, 3.0], no3: [180, 220] },
+            'Blessing': { ce: [1.7, 2.1], no3: [180, 220] },
+            'Aperol': { ce: [1.8, 2.4], no3: [160, 200] },
+            'Sugar Doll': { ce: [1.8, 2.4], no3: [160, 200] },
+            'Brave in Dark': { ce: [2.4, 3.0], no3: [180, 220] },
+            'Momentum': { ce: [1.8, 2.4], no3: [160, 200] },
+            'Queenberry': { ce: [1.8, 2.4], no3: [160, 200] },
+            'Glacier': { ce: [1.8, 2.4], no3: [180, 220] },
+            'Satina': { ce: [1.8, 2.4], no3: [160, 200] },
+            'Marilyn': { ce: [1.8, 2.4], no3: [160, 200] },
+            'Moonwalk': { ce: [1.8, 2.4], no3: [160, 200] },
+            'Orange Crush': { ce: [1.8, 2.4], no3: [160, 200] },
+            'Clementina': { ce: [1.8, 2.4], no3: [160, 200] },
+            'Deep Purple': { ce: [1.8, 2.4], no3: [160, 200] },
+            'Frutteto': { ce: [1.7, 2.1], no3: [180, 220] }
+        };
+
+        function normalizeSectorKey(s) {
+            if (s === null || s === undefined) return '';
+            return String(s).replace(/^sector\s*/i, '').trim();
+        }
+
+        function normalizeBlockKey(b) {
+            if (b === null || b === undefined) return '';
+            let s = String(b).replace(/^bloque\s*/i, '').trim().toUpperCase();
+            return s.replace(/^0+([1-9A-Z])/i, '$1');
+        }
+
+        function findCatalogEntry(valveNumber, sector = null, block = null) {
+            if (!valveNumber) return null;
+            const v = parseInt(valveNumber);
+            if (isNaN(v)) return null;
+
+            const sec = normalizeSectorKey(sector);
+            const blk = normalizeBlockKey(block);
+
+            // 1. Coincidencia exacta con sector y bloque
+            if (sec && blk) {
+                const found = CIPRES_VALVE_CATALOG.find(item => 
+                    item.valve === v && 
+                    item.sector === sec && 
+                    (normalizeBlockKey(item.block) === blk || item.block === blk)
+                );
+                if (found) return found;
+            }
+
+            // 2. Coincidencia por sector y válvula (única por sector en Ciprés)
+            if (sec) {
+                const found = CIPRES_VALVE_CATALOG.find(item => item.valve === v && item.sector === sec);
+                if (found) return found;
+            }
+
+            // 3. Coincidencia por bloque y válvula (única por bloque en Ciprés)
+            if (blk) {
+                const found = CIPRES_VALVE_CATALOG.find(item => 
+                    item.valve === v && 
+                    (normalizeBlockKey(item.block) === blk || item.block === blk)
+                );
+                if (found) return found;
+            }
+
+            // 4. Si solo se proporciona la válvula
+            const matches = CIPRES_VALVE_CATALOG.filter(item => item.valve === v);
+            if (matches.length > 0) {
+                return matches[0];
+            }
+
+            return null;
+        }
+
+        /* ── HELPERS DE DATOS ── */
+        function getLimitsForValve(v, sector = null, block = null) {
+            if (!v) return { ce: null, no3: null };
+            const variety = getVarietyForValve(v, sector, block);
+            if (variety) {
+                if (VARIETY_TARGET_LIMITS[variety]) return VARIETY_TARGET_LIMITS[variety];
+                const primary = variety.split(',')[0].trim();
+                if (VARIETY_TARGET_LIMITS[primary]) return VARIETY_TARGET_LIMITS[primary];
+            }
+            return { ce: [1.8, 2.5], no3: [160, 220] };
+        }
+
+        function getVarietyForValve(valveNumber, sector = null, block = null) {
+            if (!valveNumber) return '';
+            const entry = findCatalogEntry(valveNumber, sector, block);
+            if (entry) return entry.variety;
+
+            const v = parseInt(valveNumber);
+            const matches = CIPRES_VALVE_CATALOG.filter(item => item.valve === v);
+            if (matches.length > 0) {
+                const uniqueVars = Array.from(new Set(matches.map(m => m.variety)));
+                return uniqueVars.join(' / ');
+            }
+            return 'Desc.';
+        }
+
+        const parseNumericValue = v => {
+            if (v === null || v === undefined || v === '') return NaN;
+            if (typeof v === 'number') return v;
+            let s = String(v).replace(/%/g, '').trim();
+            if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+            return (isFinite(s) && s !== '') ? parseFloat(s) : NaN;
+        };
+        const cleanSumaText = v => typeof v === 'string' ? v.replace(/^[Ss][uú]ma\s+de\s+/i, '').replace(/^[Ss][uú]ma\s+/i, '') : v;
+        const cleanSheetData = d => Array.isArray(d) ? d.map(r => Array.isArray(r) ? r.map(cleanSumaText) : r) : d;
+
+        function getSheetJson(ws) {
+            if (ws && ws['!ref']) {
+                try {
+                    const range = XLSX.utils.decode_range(ws['!ref']);
+                    range.e.c = Math.max(range.e.c, 150);
+                    ws['!ref'] = XLSX.utils.encode_range(range);
+                } catch (e) {}
+            }
+            return cleanSheetData(XLSX.utils.sheet_to_json(ws, { header: 1, raw: false }));
+        }
+
+        function getBlockForValve(valveNumber, sector = null) {
+            if (!valveNumber) return [];
+            const entry = findCatalogEntry(valveNumber, sector, null);
+            if (entry) return [`Bloque ${entry.block}`];
+
+            const v = parseInt(valveNumber);
+            const matches = CIPRES_VALVE_CATALOG.filter(item => item.valve === v);
+            if (matches.length > 0) {
+                return matches.map(m => `Bloque ${m.block}`);
+            }
+            return [];
+        }
+
+        function sortBlocks(arr) {
+            return arr.sort((a, b) => {
+                if (a === 'Otros') return 1; if (b === 'Otros') return -1;
+                const rx = /Bloque\s*(\d+)(?:\.(\d+))?([A-Z])?/i;
+                const ma = a.match(rx), mb = b.match(rx);
+                if (ma && mb) {
+                    const d = parseInt(ma[1]) - parseInt(mb[1]); if (d) return d;
+                    const e = (ma[2]||0) - (mb[2]||0); if (e) return e;
+                    return (ma[3]||'').localeCompare(mb[3]||'');
+                }
+                const na = parseInt(a.replace(/\D+/g, '')) || 0;
+                const nb = parseInt(b.replace(/\D+/g, '')) || 0;
+                if (na !== nb) return na - nb;
+                return a.localeCompare(b);
+            });
+        }
+
+        /* ── EXTRACCIÓN DE METADATOS (SECTOR, BLOQUE, VÁLVULA) ── */
+        function extractSheetMetadata(ws, sheetName) {
+            const json = getSheetJson(ws);
+            let sector = null;
+            let block = null;
+            let valve = null;
+            let hasData = false;
+
+            for (let r = 0; r < Math.min(json.length, 15); r++) {
+                const row = json[r];
+                if (!row || !row[0]) continue;
+                const label = String(row[0]).trim().toLowerCase();
+                const rawVal = (row[1] !== undefined && row[1] !== null) ? String(row[1]).trim() : '';
+
+                if (label.includes('sector')) {
+                    if (rawVal && !rawVal.toLowerCase().includes('todas') && !rawVal.toLowerCase().includes('varios')) {
+                        sector = rawVal.replace(/^sector\s*/i, '').trim();
+                    }
+                } else if (label.includes('bloque')) {
+                    if (rawVal && !rawVal.toLowerCase().includes('todas') && !rawVal.toLowerCase().includes('varios')) {
+                        block = rawVal.replace(/^bloque\s*/i, '').trim();
+                    }
+                } else if (label.includes('valvula') || label.includes('válvula')) {
+                    if (rawVal && !rawVal.toLowerCase().includes('todas') && !rawVal.toLowerCase().includes('varios')) {
+                        const numMatch = rawVal.match(/\d+/);
+                        if (numMatch) valve = parseInt(numMatch[0]);
+                    }
+                } else if (label.includes('ce ') || label.includes('ph ') || label.includes('volumen') || label.includes('ejecu') || label.includes('no3')) {
+                    if (row.slice(1).some(v => v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim() !== '0')) {
+                        hasData = true;
+                    }
+                }
+            }
+
+            const matchSheetNum = sheetName.match(/\((\d+)\)/);
+            const sheetNum = matchSheetNum ? parseInt(matchSheetNum[1]) : null;
+
+            if (valve === null || isNaN(valve)) {
+                valve = sheetNum || 1;
+            }
+
+            // Deducir sector a partir de bloque y válvula si falta el sector
+            if (!sector && block) {
+                const found = findCatalogEntry(valve, null, block);
+                if (found) sector = found.sector;
+            }
+
+            // Deducir bloque a partir de sector y válvula si falta el bloque
+            if (!block) {
+                const fb = getBlockForValve(valve, sector);
+                block = fb.length > 0 ? fb[0].replace(/^bloque\s*/i, '').trim() : '1';
+            }
+
+            // Fallback para sector si aún no se determinó
+            if (!sector) {
+                const found = findCatalogEntry(valve, null, block);
+                sector = found ? found.sector : '1';
+            }
+
+            const secStr = String(sector).replace(/^sector\s*/i, '').trim();
+            const blkStr = String(block).replace(/^bloque\s*/i, '').trim();
+            const valveNum = typeof valve === 'number' ? valve : parseInt(valve) || 1;
+            const hasValidBlockAndValve = (blkStr !== '' && !blkStr.includes('(') && valveNum > 0);
+
+            return {
+                sheetName,
+                sector: secStr,
+                sectorLabel: `Sector ${secStr}`,
+                block: blkStr,
+                blockLabel: `Bloque ${blkStr}`,
+                valveNumber: valveNum,
+                valveLabel: `Válvula ${valveNum}`,
+                variety: getVarietyForValve(valveNum, secStr, blkStr),
+                valveKey: `S${secStr}_B${blkStr}_V${valveNum}`,
+                sheetNum: sheetNum || 0,
+                hasData,
+                isValid: hasData || hasValidBlockAndValve
+            };
+        }
+
+        /* ── RENDERIZADO DE LA JERARQUÍA EN BARRA LATERAL ── */
+        function renderSidebarHierarchy(hierarchy, filterSector = 'all') {
+            blocksContainer.innerHTML = '';
+            const sortedSectors = Object.keys(hierarchy).sort((a, b) => {
+                const na = parseInt(a.replace(/\D+/g, '')) || 0;
+                const nb = parseInt(b.replace(/\D+/g, '')) || 0;
+                return na - nb;
+            });
+
+            const sectorsToShow = filterSector === 'all' 
+                ? sortedSectors 
+                : sortedSectors.filter(s => s === filterSector);
+
+            sectorsToShow.forEach(sectorName => {
+                const blocksObj = hierarchy[sectorName];
+                const blockNames = Object.keys(blocksObj);
+                let totalValvesInSector = 0;
+                blockNames.forEach(b => totalValvesInSector += blocksObj[b].length);
+
+                const secGroup = document.createElement('div');
+                secGroup.className = 'sector-group';
+                secGroup.dataset.sector = sectorName;
+
+                const secHdr = document.createElement('div');
+                secHdr.className = 'sector-group-header';
+                secHdr.innerHTML = `
+                    <span class="sector-badge-title">🌱 ${sectorName}</span>
+                    <span class="sector-badge-count">${blockNames.length} blq · ${totalValvesInSector} válv</span>
+                `;
+                secGroup.appendChild(secHdr);
+
+                const secBody = document.createElement('div');
+                secBody.className = 'sector-blocks-wrap';
+
+                sortBlocks(blockNames).forEach(blockName => {
+                    const card = document.createElement('div');
+                    card.className = 'block-card';
+
+                    const hdr = document.createElement('div');
+                    hdr.className = 'block-header';
+                    hdr.textContent = blockName;
+                    card.appendChild(hdr);
+
+                    const body = document.createElement('div');
+                    body.className = 'block-body';
+
+                    const valves = blocksObj[blockName].sort((a, b) => a.valveNumber - b.valveNumber);
+                    valves.forEach(meta => {
+                        const btn = document.createElement('button');
+                        btn.className = 'valve-btn';
+                        btn.textContent = `Válvula ${meta.valveNumber} (${meta.variety})`;
+                        btn.dataset.sheetName = meta.sheetName;
+                        btn.dataset.valveKey = meta.valveKey;
+
+                        btn.addEventListener('click', () => {
+                            document.querySelectorAll('.valve-btn').forEach(b => b.classList.remove('active'));
+                            btn.classList.add('active');
+                            displaySheetContent(meta.sheetName);
+                        });
+                        body.appendChild(btn);
+                    });
+
+                    card.appendChild(body);
+                    secBody.appendChild(card);
+                });
+
+                secGroup.appendChild(secBody);
+                blocksContainer.appendChild(secGroup);
+            });
+        }
+
+        /* ── PROCESO Y VISUALIZACIÓN DEL WORKBOOK ── */
+        function processAndDisplayWorkbook(arrayBuffer, filename) {
+            fileNameEl.textContent = filename;
+            fileInfoEl.style.display = 'flex';
+            try {
+                const data = new Uint8Array(arrayBuffer);
+                workbookData = XLSX.read(data, { type: 'array' });
+                
+                sheetsMetadata = {};
+                validSheetMetas = [];
+
+                // 1. Extraer metadatos de todas las hojas de tipo TD
+                workbookData.SheetNames.forEach(sheetName => {
+                    if (!sheetName.startsWith('TD') && !sheetName.includes('(')) return;
+                    const ws = workbookData.Sheets[sheetName];
+                    const meta = extractSheetMetadata(ws, sheetName);
+                    if (meta.isValid) {
+                        sheetsMetadata[sheetName] = meta;
+                        validSheetMetas.push(meta);
+                    }
+                });
+
+                // Respaldo: si ninguna hoja pasó el filtro, incluir todas las hojas TD
+                if (validSheetMetas.length === 0) {
+                    workbookData.SheetNames.forEach(sheetName => {
+                        if (!sheetName.startsWith('TD') && !sheetName.includes('(')) return;
+                        const ws = workbookData.Sheets[sheetName];
+                        const meta = extractSheetMetadata(ws, sheetName);
+                        sheetsMetadata[sheetName] = meta;
+                        validSheetMetas.push(meta);
+                    });
+                }
+
+                // 2. Organizar jerarquía: Sector -> Bloque -> Válvulas
+                currentHierarchy = {};
+                validSheetMetas.forEach(meta => {
+                    const s = meta.sectorLabel;
+                    const b = meta.blockLabel;
+                    if (!currentHierarchy[s]) currentHierarchy[s] = {};
+                    if (!currentHierarchy[s][b]) currentHierarchy[s][b] = [];
+                    currentHierarchy[s][b].push(meta);
+                });
+
+                // 3. Inicializar selector de sector en la barra lateral
+                const sectorFilterWrap = document.getElementById('sidebar-sector-filter-wrap');
+                const sectorSelect = document.getElementById('sidebar-sector-select');
+                const sortedSectors = Object.keys(currentHierarchy).sort((a, b) => {
+                    const na = parseInt(a.replace(/\D+/g, '')) || 0;
+                    const nb = parseInt(b.replace(/\D+/g, '')) || 0;
+                    return na - nb;
+                });
+
+                if (sortedSectors.length > 1) {
+                    sectorFilterWrap.style.display = 'block';
+                    sectorSelect.innerHTML = `<option value="all">Todos los sectores (${sortedSectors.length})</option>` +
+                        sortedSectors.map(s => {
+                            const blkCount = Object.keys(currentHierarchy[s]).length;
+                            return `<option value="${s}">${s} (${blkCount} bloques)</option>`;
+                        }).join('');
+                } else {
+                    sectorFilterWrap.style.display = 'none';
+                }
+
+                // 4. Renderizar jerarquía en la barra lateral
+                renderSidebarHierarchy(currentHierarchy, 'all');
+
+                // 5. Seleccionar la primera válvula disponible
+                const firstBtn = blocksContainer.querySelector('.valve-btn');
+                if (firstBtn) firstBtn.click();
+
+            } catch (err) {
+                console.error(err);
+                showInlineError(sheetContentContainer, 'No se pudo leer el archivo. Asegúrate de que es un Excel válido.');
+                clearFile();
+            }
+        }
+
+        // Event listener para el filtro de sector en la barra lateral
+        const sidebarSectorSelect = document.getElementById('sidebar-sector-select');
+        if (sidebarSectorSelect) {
+            sidebarSectorSelect.addEventListener('change', (e) => {
+                if (!currentHierarchy) return;
+                renderSidebarHierarchy(currentHierarchy, e.target.value);
+                const firstBtn = blocksContainer.querySelector('.valve-btn');
+                if (firstBtn) firstBtn.click();
+            });
+        }
+
+        /* ── CONTENIDO DE HOJA ── */
+        // Localiza dinámicamente la fila "Valores" de la Tabla Dinámica (contiene las fechas de columna).
+        // Antes estaba fija en la fila 5 (índice 4), pero si la Tabla Dinámica tiene filtros/slicers
+        // adicionales arriba (p. ej. "Válvula", "Mes-Año" con filas extra), esa fila se desplaza y
+        // los datos dejaban de coincidir con las fechas mostradas en las gráficas.
+        function findDateHeaderRowIndex(data) {
+            const idx = data.findIndex(row => row && row[0] && String(row[0]).trim().toLowerCase() === 'valores');
+            return idx !== -1 ? idx : 4; // respaldo: comportamiento anterior si no se encuentra
+        }
+
+        function findRowIndices(data) {
+            const findRowIdx = (...searchTerms) => data.findIndex(row => {
+                if (!row || !row[0]) return false;
+                const label = String(row[0]).toLowerCase();
+                return searchTerms.some(term => label.includes(term));
+            });
+            return {
+                ceEsp: findRowIdx('ce esperada', 'ce esperado'),
+                ceDre: findRowIdx('ce drenaje', 'ce emisor'),
+                phEsp: findRowIdx('ph esperada', 'ph esperado'),
+                phDre: findRowIdx('ph drenaje', 'ph emisor'),
+                ejecucion: findRowIdx('% ejecución', '% ejecucion', 'ejecución'),
+                no3: findRowIdx('n-no3', 'no3'),
+                vol: findRowIdx('volumen ejecutado', 'volumen de riego'),
+                
+                ceDrenajeReal: findRowIdx('ce drenaje'),
+                ceEmisorReal: findRowIdx('ce emisor'),
+                phDrenajeReal: findRowIdx('ph drenaje'),
+                phEmisorReal: findRowIdx('ph emisor'),
+
+                pctDrenaje: findRowIdx('% drenaje', 'porcentaje de drenaje')
+            };
+        }
+
+        function displaySheetContent(sheetName) {
+            sheetContentContainer.innerHTML = '';
+            activeCharts.forEach(c => c.destroy());
+            activeCharts = [];
+
+            const meta = sheetsMetadata[sheetName];
+            if (meta) {
+                const banner = document.createElement('div');
+                banner.className = 'valve-context-banner';
+                banner.innerHTML = `
+                    <div class="valve-context-left">
+                        <span class="context-pill context-sector">🌱 ${meta.sectorLabel}</span>
+                        <span class="context-pill context-block">🏢 ${meta.blockLabel}</span>
+                        <span class="context-pill context-valve">🚰 ${meta.valveLabel}</span>
+                        <span class="context-pill context-variety">🌸 Variedad: ${meta.variety || 'Desc.'}</span>
+                    </div>
+                    <div class="valve-context-right">
+                        <span class="sheet-pill-tag">Hoja: <strong>${meta.sheetName}</strong></span>
+                    </div>
+                `;
+                sheetContentContainer.appendChild(banner);
+            }
+
+            const ws = workbookData.Sheets[sheetName];
+            const json = getSheetJson(ws);
+            if (json.length > 0) {
+                const indices = findRowIndices(json);
+                createTable(sheetContentContainer, json, indices);
+                createCharts(sheetContentContainer, json, sheetName, indices);
+            } else {
+                sheetContentContainer.innerHTML += '<div class="inline-alert info" style="margin:0 0 12px;">Esta hoja está vacía.</div>';
+            }
+        }
+
+        /* ── TABLA ── */
+        function createTable(container, data, indices) {
+            const wrap = document.createElement('div');
+            wrap.className = 'table-scroll-wrap';
+            wrap.style.marginBottom = '16px';
+            const table = document.createElement('table');
+            table.className = 'data-table';
+            
+            // Usamos la fila real de fechas ("Valores") como encabezado de columnas en vez de
+            // la fila 1 (que en las hojas de Tabla Dinámica suele venir vacía).
+            const headerRowIndex = findDateHeaderRowIndex(data);
+            const headerSourceRow = (data[headerRowIndex] && data[headerRowIndex].some(c => c !== null && c !== undefined && String(c).trim() !== ''))
+                ? data[headerRowIndex]
+                : (data[0] || []);
+
+            const thead = document.createElement('thead');
+            const hr = document.createElement('tr');
+            headerSourceRow.forEach(h => { const th = document.createElement('th'); th.textContent = h ?? ''; hr.appendChild(th); });
+            thead.appendChild(hr);
+            table.appendChild(thead);
+            
+            const tbody = document.createElement('tbody');
+            data.slice(1).forEach((rowData, ri) => {
+                const origIdx = ri + 1;
+                if (!rowData || rowData.length === 0) return;
+                const rowLabel = rowData[0] ? String(rowData[0]).trim().toLowerCase() : '';
+                const secondCellLabel = rowData[1] ? String(rowData[1]).trim().toLowerCase() : '';
+
+                if (rowLabel.includes('volumen 2') || rowLabel.includes('volumen 3') || rowLabel === 'evt') return;
+                // Oculta las filas técnicas de la Tabla Dinámica: "Valores" y "Etiquetas de columna"
+                if (rowLabel === 'valores' || secondCellLabel === 'etiquetas de columna') return;
+
+                const isDrenaje = rowLabel.includes('%') && rowLabel.includes('drenaje');
+                const isMetaRow = rowLabel.includes('sector') || rowLabel.includes('bloque') || rowLabel.includes('valvula') || rowLabel.includes('válvula');
+                const tr = document.createElement('tr');
+                if (isMetaRow) tr.classList.add('meta-highlight-row');
+
+                rowData.forEach((cell, ci) => {
+                    const td = document.createElement('td');
+                    td.textContent = cell ?? '';
+                    if (ci > 0) {
+                        if (isDrenaje) {
+                            const v = parseNumericValue(cell);
+                            if (!isNaN(v)) {
+                                const n = (Math.abs(v) <= 1 && cell !== '0' && cell !== 0) ? v * 100 : v;
+                                td.className = (n >= 45 && n <= 60) ? 'cell-ok' : 'cell-bad';
+                            }
+                        } else {
+                            let cur = NaN, tgt = NaN, apply = false;
+                            if (origIdx === indices.ceDre) { cur = parseNumericValue(cell); tgt = parseNumericValue(data[indices.ceEsp]?.[ci]); apply = true; }
+                            else if (origIdx === indices.phDre) { cur = parseNumericValue(cell); tgt = parseNumericValue(data[indices.phEsp]?.[ci]); apply = true; }
+                            else if (origIdx === indices.ejecucion) { cur = parseNumericValue(cell); if (isNaN(cur)) cur = 0; tgt = 100; apply = true; }
+                            
+                            if (origIdx === indices.ceEsp || origIdx === indices.phEsp) apply = false;
+                            
+                            if (apply && !isNaN(cur) && !isNaN(tgt) && tgt !== 0 && cur !== 0) {
+                                const pct = Math.abs(cur - tgt) / tgt;
+                                td.className = pct <= 0.10 ? 'cell-ok' : pct <= 0.20 ? 'cell-warn' : 'cell-bad';
+                            }
+                        }
+                    }
+                    if (ci === 0) td.style.whiteSpace = 'nowrap';
+                    if (isMetaRow || (typeof td.textContent === 'string' && td.textContent.toLowerCase().includes('valvula'))) {
+                        td.classList.add('row-label-blue');
+                    }
+                    tr.appendChild(td);
+                });
+                if (origIdx === 1 && !isMetaRow) tr.querySelectorAll('td').forEach(td => td.classList.add('row-label-blue'));
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            wrap.appendChild(table);
+            container.appendChild(wrap);
+        }
+
+        /* ── GRÁFICAS POR VÁLVULA ── */
+        function createCharts(container, data, sheetName, indices, isForPrint = false) {
+            const meta = sheetsMetadata[sheetName] || (sheetName ? { valveNumber: (sheetName.match(/\((\d+)\)/) ? parseInt(sheetName.match(/\((\d+)\)/)[1]) : null) } : {});
+            const valveNumber = meta.valveNumber;
+            const limits = getLimitsForValve(valveNumber, meta.sector, meta.block);
+
+            const grid = document.createElement('div');
+            grid.className = 'charts-grid';
+            container.appendChild(grid);
+            const cleanValue = (v, isPct = false) => {
+                const n = parseNumericValue(v);
+                if (isNaN(n) || n === 0) return null;
+                if (isPct && Math.abs(n) <= 1 && v !== '0' && v !== 0) return n * 100;
+                return n;
+            };
+            const configs = [];
+            const headerRowIndex = findDateHeaderRowIndex(data);
+            
+            const ceRows = [];
+            if (indices.ceEmisorReal !== -1) ceRows.push(indices.ceEmisorReal);
+            if (indices.ceDrenajeReal !== -1) ceRows.push(indices.ceDrenajeReal);
+            
+            if (ceRows.length > 0) {
+                configs.push({ id: 'ce', title: 'Conductividad Eléctrica', headerRowIndex, dataRowIndices: ceRows, maxRow: Math.max(...ceRows), colors: ['#0ea5e9', '#f97316'], isPercentage: false });
+            } else if (indices.ceDre !== -1) {
+                configs.push({ id: 'ce', title: 'Conductividad Eléctrica', headerRowIndex, dataRowIndices: [indices.ceDre], maxRow: indices.ceDre, colors: ['#f97316'], isPercentage: false });
+            }
+
+            const phRows = [];
+            if (indices.phEmisorReal !== -1) phRows.push(indices.phEmisorReal);
+            if (indices.phDrenajeReal !== -1) phRows.push(indices.phDrenajeReal);
+            
+            if (phRows.length > 0) {
+                configs.push({ id: 'ph', title: 'pH', headerRowIndex, dataRowIndices: phRows, maxRow: Math.max(...phRows), colors: ['#8b5cf6', '#ec4899'], isPercentage: false });
+            } else if (indices.phDre !== -1) {
+                configs.push({ id: 'ph', title: 'pH', headerRowIndex, dataRowIndices: [indices.phDre], maxRow: indices.phDre, colors: ['#ec4899'], isPercentage: false });
+            }
+
+            if (indices.ejecucion !== -1) configs.push({ id: 'ejecucion', title: '% Ejecución', headerRowIndex, dataRowIndices: [indices.ejecucion], maxRow: indices.ejecucion, colors: ['#8b5cf6'], isPercentage: true });
+            if (indices.no3 !== -1) configs.push({ id: 'no3', title: 'N-NO3', headerRowIndex, dataRowIndices: [indices.no3], maxRow: indices.no3, colors: ['#f97316'], isPercentage: false });
+            if (indices.vol !== -1) configs.push({ id: 'volumen', title: 'Volumen Ejecutado (L/Cama)', headerRowIndex, dataRowIndices: [indices.vol], maxRow: indices.vol, colors: ['#0ea5e9'], isPercentage: false });
+            if (indices.pctDrenaje !== -1) configs.push({ id: 'pct_drenaje', title: '% Drenaje', headerRowIndex, dataRowIndices: [indices.pctDrenaje], maxRow: indices.pctDrenaje, colors: ['#22c55e'], isPercentage: true });
+
+            configs.forEach(cfg => {
+                if (data.length <= cfg.maxRow) return;
+                const hRow = data[cfg.headerRowIndex];
+                const dRows = cfg.dataRowIndices.map(i => data[i]);
+                if (!hRow || dRows.some(r => !r)) return;
+                const labels = [], dsData = dRows.map(() => []);
+                
+                const maxCol = Math.max(hRow?.length || 0, ...dRows.map(r => r ? r.length : 0));
+                for (let i = 1; i < maxCol; i++) {
+                    const isAllEmpty = dRows.every(row => row[i] === null || row[i] === undefined || String(row[i]).trim() === '');
+                    if (isAllEmpty) continue;
+                    let hVal = (hRow && hRow[i] !== null && hRow[i] !== undefined) ? String(hRow[i]).trim() : '';
+                    labels.push(hVal !== '' ? hVal : `S${i}`);
+                    dRows.forEach((row, j) => dsData[j].push(cleanValue(row[i], cfg.isPercentage)));
+                }
+                const datasets = dRows.map((row, i) => ({
+                    label: row[0]?.trim() ?? `Serie ${i+1}`,
+                    data: dsData[i],
+                    fill: false,
+                    borderColor: cfg.colors[i % cfg.colors.length],
+                    backgroundColor: cfg.colors[i % cfg.colors.length],
+                    tension: 0.2,
+                    spanGaps: true,
+                    pointRadius: 3,
+                    borderWidth: 2
+                }));
+                const card = document.createElement('div');
+                card.className = 'chart-card';
+                const wrap = document.createElement('div');
+                wrap.className = 'chart-container';
+                const canvas = document.createElement('canvas');
+                wrap.appendChild(canvas);
+                card.appendChild(wrap);
+                grid.appendChild(card);
+                const yAxis = { ticks: {} };
+                if (cfg.isPercentage) yAxis.ticks.callback = v => v.toFixed(0) + '%';
+                if (cfg.yMin !== undefined) yAxis.min = cfg.yMin;
+                if (cfg.yMax !== undefined) yAxis.max = cfg.yMax;
+                if (cfg.yStep !== undefined) yAxis.ticks.stepSize = cfg.yStep;
+
+                let annotations = {};
+                if (cfg.id === 'ce' && limits.ce) {
+                    annotations.box1 = {
+                        type: 'box', yMin: limits.ce[0], yMax: limits.ce[1],
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)', borderColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 1, drawTime: 'beforeDatasetsDraw'
+                    };
+                    annotations.line1 = { type: 'line', yMin: limits.ce[0], yMax: limits.ce[0], borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
+                    annotations.line2 = { type: 'line', yMin: limits.ce[1], yMax: limits.ce[1], borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
+                }
+                if (cfg.id === 'no3' && limits.no3) {
+                    yAxis.max = Math.max(300, limits.no3[1] + 50);
+                    annotations.box1 = {
+                        type: 'box', yMin: limits.no3[0], yMax: limits.no3[1],
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)', borderColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 1, drawTime: 'beforeDatasetsDraw'
+                    };
+                    annotations.line1 = { type: 'line', yMin: limits.no3[0], yMax: limits.no3[0], borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
+                    annotations.line2 = { type: 'line', yMin: limits.no3[1], yMax: limits.no3[1], borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
+                }
+                if (cfg.id === 'ph') {
+                    annotations.box1 = {
+                        type: 'box', yMin: 5.5, yMax: 6.5,
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)', borderColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 1, drawTime: 'beforeDatasetsDraw'
+                    };
+                    annotations.line1 = { type: 'line', yMin: 5.5, yMax: 5.5, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
+                    annotations.line2 = { type: 'line', yMin: 6.5, yMax: 6.5, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
+                }
+                if (cfg.id === 'ejecucion') {
+                    annotations.box1 = {
+                        type: 'box', yMin: 90, yMax: 110,
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)', borderColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 1, drawTime: 'beforeDatasetsDraw'
+                    };
+                    annotations.line1 = { type: 'line', yMin: 90, yMax: 90, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
+                    annotations.line2 = { type: 'line', yMin: 110, yMax: 110, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
+                }
+
+                const chartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: isForPrint ? false : {},
+                    scales: {
+                        y: yAxis,
+                        x: { type: 'category', ticks: { maxRotation: 60, minRotation: 40, font: { size: 10 } }, grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } },
+                        title: { display: true, text: cfg.title, font: { size: 13, weight: '700' }, color: '#1a1a1a', padding: { bottom: 8 } }
+                    }
+                };
+
+                if (Object.keys(annotations).length > 0) {
+                    chartOptions.plugins.annotation = { annotations };
+                }
+
+                const ch = new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: { labels, datasets },
+                    options: chartOptions
+                });
+                if (!isForPrint) {
+                    activeCharts.push(ch);
+                }
+            });
+            if (grid.children.length === 0) grid.innerHTML = '<p class="inline-alert info">No se pudieron generar gráficos. Verifica el formato de los datos.</p>';
+        }
+
+        /* ── REPORTE SEMANAL ── */
+        function getValuesForFirstAlertSequence(dataRow, targetRow, targetValue = null) {
+            if (!dataRow) return null;
+            let consecutive = 0, vals = [];
+            const start = Math.max(1, dataRow.length - 6);
+            for (let i = start; i < dataRow.length; i++) {
+                const cur = parseNumericValue(dataRow[i]);
+                const tgt = targetValue !== null ? targetValue : parseNumericValue(targetRow?.[i]);
+                if (!isNaN(cur) && !isNaN(tgt) && tgt !== 0 && cur !== 0) {
+                    if (Math.abs(cur - tgt) / tgt > 0.20) { consecutive++; vals.push((cur / tgt) * 100); }
+                    else { if (consecutive >= 3) return vals; consecutive = 0; vals = []; }
+                } else { if (consecutive >= 3) return vals; consecutive = 0; vals = []; }
+            }
+            return consecutive >= 3 ? vals : null;
+        }
+
+        function generateWeeklyReport() {
+            reportContainer.innerHTML = '';
+            if (!workbookData || !validSheetMetas.length) {
+                reportContainer.innerHTML = `<div class="empty-state"><p>Carga un archivo Excel para generar el reporte semanal.</p></div>`;
+                return;
+            }
+
+            let totalSum = 0, totalCount = 0;
+            const blockData = {};
+            const redAlerts = { ce: [], ph: [], ejecucion: [] };
+
+            validSheetMetas.forEach(meta => {
+                const ws = workbookData.Sheets[meta.sheetName];
+                const json = getSheetJson(ws);
+                const indices = findRowIndices(json);
+                const groupKey = `${meta.sectorLabel} - ${meta.blockLabel}`;
+
+                if (!blockData[groupKey]) {
+                    blockData[groupKey] = { sum: 0, count: 0, sector: meta.sectorLabel, block: meta.blockLabel };
+                }
+
+                if (indices.ejecucion !== -1 && json.length > indices.ejecucion) {
+                    const exRow = json[indices.ejecucion];
+                    const last6 = exRow.slice(1).slice(-6);
+                    last6.forEach(v => {
+                        const n = parseNumericValue(v);
+                        if (!isNaN(n) && n > 0) {
+                            totalSum += n; totalCount++;
+                            blockData[groupKey].sum += n; blockData[groupKey].count++;
+                        }
+                    });
+                }
+                const ceVals = (indices.ceDre !== -1 && indices.ceEsp !== -1) ? getValuesForFirstAlertSequence(json[indices.ceDre], json[indices.ceEsp]) : null;
+                if (ceVals && !redAlerts.ce.some(a => a.valveKey === meta.valveKey)) redAlerts.ce.push({ ...meta, values: ceVals });
+
+                const phVals = (indices.phDre !== -1 && indices.phEsp !== -1) ? getValuesForFirstAlertSequence(json[indices.phDre], json[indices.phEsp]) : null;
+                if (phVals && !redAlerts.ph.some(a => a.valveKey === meta.valveKey)) redAlerts.ph.push({ ...meta, values: phVals });
+
+                const ejVals = (indices.ejecucion !== -1) ? getValuesForFirstAlertSequence(json[indices.ejecucion], null, 100) : null;
+                if (ejVals && !redAlerts.ejecucion.some(a => a.valveKey === meta.valveKey)) redAlerts.ejecucion.push({ ...meta, values: ejVals });
+            });
+
+            const avg = totalCount > 0 ? (totalSum / totalCount).toFixed(2) : '—';
+
+            // Ordenar por número de Sector y luego número de Bloque
+            const sortedGroupKeys = Object.keys(blockData).sort((a, b) => {
+                const ma = a.match(/Sector\s*(\d+).*?Bloque\s*(\d+)/i) || [];
+                const mb = b.match(/Sector\s*(\d+).*?Bloque\s*(\d+)/i) || [];
+                const sa = parseInt(ma[1]) || 0, sb = parseInt(mb[1]) || 0;
+                if (sa !== sb) return sa - sb;
+                const ba = parseInt(ma[2]) || 0, bb = parseInt(mb[2]) || 0;
+                return ba - bb;
+            });
+
+            const renderAlerts = list => {
+                if (!list.length) return '<span class="no-alerts">✓ Sin alertas</span>';
+                return list.sort((a, b) => {
+                    const sa = parseInt(a.sector) || 0, sb = parseInt(b.sector) || 0;
+                    if (sa !== sb) return sa - sb;
+                    const ba = parseInt(a.block) || 0, bb = parseInt(b.block) || 0;
+                    if (ba !== bb) return ba - bb;
+                    return a.valveNumber - b.valveNumber;
+                }).map(info => `<span class="valve-badge"><strong>${info.sectorLabel} · ${info.blockLabel} · ${info.valveLabel}</strong> (${info.variety || 'Desc.'}) — [${info.values.map(v => v.toFixed(1)+'%').join(', ')}]</span>`)
+                .join('');
+            };
+
+            reportContainer.innerHTML = `
+                <div id="report-content-display">
+                    <div class="report-section">
+                        <div class="report-card">
+                            <div class="report-card-header green">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+                                Promedios de Riego — % Ejecución
+                            </div>
+                            <div class="report-card-body">
+                                <div class="big-stat">${avg}%</div>
+                                <div class="big-stat-label">Promedio general (últimos 6 días)</div>
+                                <hr class="divider">
+                                <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--ink-400); letter-spacing:.5px; margin-bottom:8px;">Por Sector y Bloque</div>
+                                ${sortedGroupKeys.map(gk => {
+                                    const a = blockData[gk].count > 0 ? (blockData[gk].sum / blockData[gk].count).toFixed(2) : '—';
+                                    return `<div class="block-list-item"><span class="block-name">${gk}</span><span class="block-val">${a}%</span></div>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-section">
+                        <div class="report-card">
+                            <div class="report-card-header red">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>
+                                Alertas Críticas — 3 o más días fuera de rango
+                            </div>
+                            <div class="report-card-body">
+                                <div class="alert-section-title">Conductividad Eléctrica</div>
+                                <div>${renderAlerts(redAlerts.ce)}</div>
+                                <hr class="divider">
+                                <div class="alert-section-title">pH</div>
+                                <div>${renderAlerts(redAlerts.ph)}</div>
+                                <hr class="divider">
+                                <div class="alert-section-title">% Ejecución</div>
+                                <div>${renderAlerts(redAlerts.ejecucion)}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="report-section">
+                        <div class="report-card">
+                            <div class="report-card-header blue">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555ZM0 4.697v7.104l5.803-3.558L0 4.697ZM6.761 8.83l-6.57 4.026A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.025L8 9.586l-1.239-.757Zm3.436-.586L16 11.801V4.697l-5.803 3.546Z"/></svg>
+                                Enviar reporte por correo
+                            </div>
+                            <div class="report-card-body">
+                                <div id="email-alert-placeholder"></div>
+                                <p style="font-size:0.78rem; color:var(--ink-500); margin-bottom:12px;">Se abrirá un borrador en tu cliente de correo. Deberás presionar <strong>Enviar</strong> manualmente.</p>
+                                <label class="email-form-label" for="email-recipients">Destinatarios (separados por coma)</label>
+                                <input type="email" class="email-input" id="email-recipients" placeholder="correo1@ejemplo.com, correo2@ejemplo.com" multiple>
+                                <button class="btn-primary-dark" id="send-report-btn">Preparar correo</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('send-report-btn').addEventListener('click', sendReportByEmail);
+        }
+
+        /* ── EMAIL ── */
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            return Math.ceil((((d - new Date(Date.UTC(d.getUTCFullYear(), 0, 1))) / 86400000) + 1) / 7);
+        }
+
+        function sendReportByEmail() {
+            const recipients = document.getElementById('email-recipients').value.trim();
+            const alertBox = document.getElementById('email-alert-placeholder');
+            alertBox.innerHTML = '';
+            if (!recipients) {
+                alertBox.innerHTML = '<div class="inline-alert warn">Ingresa al menos un correo electrónico.</div>';
+                return;
+            }
+            const reportEl = document.getElementById('report-content-display');
+            if (!reportEl) return;
+            const doc = new DOMParser().parseFromString(reportEl.innerHTML, 'text/html');
+            let txt = 'Reporte Semanal - Camas Piloto\n====================================\n\n';
+            const avgEl = doc.querySelector('.big-stat');
+            if (avgEl) txt += `PROMEDIO GENERAL: ${avgEl.textContent.trim()}\n\n`;
+            doc.querySelectorAll('.block-list-item').forEach(li => {
+                const n = li.querySelector('.block-name')?.textContent.trim();
+                const v = li.querySelector('.block-val')?.textContent.trim();
+                if (n && v) txt += `- ${n}: ${v}\n`;
+            });
+            txt += '\nALERTAS CRÍTICAS\n--------------------\n';
+            ['Conductividad Eléctrica', 'pH', '% Ejecución'].forEach(sec => {
+                txt += `${sec}:\n`;
+                const badges = doc.querySelectorAll('.valve-badge');
+                txt += badges.length ? Array.from(badges).map(b => b.textContent.trim()).join(', ') + '\n' : 'Ninguna\n';
+            });
+            const subject = encodeURIComponent(`Reporte Semanal - Camas Piloto Semana ${getWeekNumber(new Date())}`);
+            const body = encodeURIComponent(txt);
+            const base = `mailto:${recipients}?subject=${subject}`;
+            if (body.length > 1500) {
+                const ta = document.createElement('textarea');
+                ta.className = 'email-input';
+                ta.value = txt;
+                ta.readOnly = true;
+                ta.rows = 5;
+                ta.style.marginTop = '8px';
+                const a = document.createElement('div');
+                a.className = 'inline-alert warn';
+                a.innerHTML = '<strong>Reporte extenso:</strong> cópialo y pégalo en el correo que se abrirá.';
+                alertBox.appendChild(a);
+                alertBox.appendChild(ta);
+                window.location.href = base;
+            } else {
+                window.location.href = `${base}&body=${body}`;
+            }
+        }
+
+        /* ── GRÁFICAS COMPARATIVAS ── */
+        function generateGraphsReport() {
+            if (!workbookData || !validSheetMetas.length) {
+                const contentDiv = document.getElementById('graphs-view-content');
+                if (contentDiv) contentDiv.innerHTML = `<div class="empty-state"><p>Carga un archivo Excel para ver las gráficas comparativas.</p></div>`;
+                return;
+            }
+
+            const filterSecEl = document.getElementById('filter-graphs-sector');
+            const filterBlqEl = document.getElementById('filter-graphs-bloque');
+            const filterValEl = document.getElementById('filter-graphs-valvula');
+
+            // Sectores únicos
+            const sectors = [...new Set(validSheetMetas.map(m => m.sectorLabel))].sort((a, b) => {
+                const na = parseInt(a.replace(/\D+/g, '')) || 0, nb = parseInt(b.replace(/\D+/g, '')) || 0;
+                return na - nb;
+            });
+
+            // Poblar opciones de sector
+            if (filterSecEl.dataset.initialized !== 'true') {
+                filterSecEl.innerHTML = '<option value="">Todos los sectores</option>' +
+                    sectors.map(s => `<option value="${s}">${s}</option>`).join('');
+                filterSecEl.dataset.initialized = 'true';
+            }
+
+            const selSec = filterSecEl.value;
+
+            // Bloques disponibles según el sector seleccionado
+            const availableMetasForBlocks = selSec 
+                ? validSheetMetas.filter(m => m.sectorLabel === selSec)
+                : validSheetMetas;
+
+            const blocks = [...new Set(availableMetasForBlocks.map(m => m.blockLabel))].sort((a, b) => {
+                const na = parseInt(a.replace(/\D+/g, '')) || 0, nb = parseInt(b.replace(/\D+/g, '')) || 0;
+                return na - nb;
+            });
+
+            const curBlq = filterBlqEl.value;
+            filterBlqEl.innerHTML = '<option value="">Todos los bloques</option>' +
+                blocks.map(b => `<option value="${b}">${b}</option>`).join('');
+            if (blocks.includes(curBlq)) filterBlqEl.value = curBlq;
+
+            const selBlq = filterBlqEl.value;
+
+            // Válvulas disponibles según sector y bloque seleccionados
+            const availableMetasForValves = availableMetasForBlocks.filter(m => !selBlq || m.blockLabel === selBlq);
+            const valves = [...new Set(availableMetasForValves.map(m => m.valveNumber))].sort((a, b) => a - b);
+
+            const curVal = filterValEl.value;
+            filterValEl.innerHTML = '<option value="">Todas las válvulas</option>' +
+                valves.map(v => `<option value="${v}">Válvula ${v}</option>`).join('');
+            if (valves.map(String).includes(curVal)) filterValEl.value = curVal;
+
+            const selVal = filterValEl.value ? parseInt(filterValEl.value) : null;
+
+            // Filtrar metas de hojas según los filtros aplicados
+            const filteredMetas = availableMetasForValves.filter(m => selVal === null || m.valveNumber === selVal);
+
+            const allValveData = {};
+            let totalCE = { s: 0, c: 0 }, totalPH = { s: 0, c: 0 }, totalEj = { s: 0, c: 0 }, totalNNO3 = { s: 0, c: 0 };
+
+            const avgPct = (dRow, tRow, tVal = null, ignZeros = false) => {
+                if (!dRow) return NaN;
+                const last6 = dRow.slice(Math.max(1, dRow.length - 6));
+                let s = 0, c = 0;
+                last6.forEach((v, i) => {
+                    const cur = parseNumericValue(v);
+                    if (ignZeros && cur === 0) return;
+                    const tgt = tVal !== null ? tVal : parseNumericValue(tRow?.[i + Math.max(1, dRow.length - 6)]);
+                    if (!isNaN(cur) && !isNaN(tgt) && tgt !== 0) { s += (cur / tgt) * 100; c++; }
+                });
+                return c > 0 ? s / c : NaN;
+            };
+
+            const avgRaw = (dRow, ignZeros = false) => {
+                if (!dRow) return NaN;
+                const last6 = dRow.slice(Math.max(1, dRow.length - 6));
+                let s = 0, c = 0;
+                last6.forEach(v => {
+                    const n = parseNumericValue(v);
+                    if (ignZeros && n === 0) return;
+                    if (!isNaN(n)) { s += n; c++; }
+                });
+                return c > 0 ? s / c : NaN;
+            };
+
+            filteredMetas.forEach(meta => {
+                const ws = workbookData.Sheets[meta.sheetName];
+                const json = getSheetJson(ws);
+                const indices = findRowIndices(json);
+                const ce = (indices.ceDre !== -1 && indices.ceEsp !== -1) ? avgPct(json[indices.ceDre], json[indices.ceEsp]) : NaN;
+                const ph = (indices.phDre !== -1 && indices.phEsp !== -1) ? avgPct(json[indices.phDre], json[indices.phEsp]) : NaN;
+                const ej = (indices.ejecucion !== -1) ? avgPct(json[indices.ejecucion], null, 100, true) : NaN;
+                const nno3 = (indices.no3 !== -1) ? avgRaw(json[indices.no3], true) : NaN;
+
+                allValveData[meta.sheetName] = {
+                    meta,
+                    ce, ph, ejecucion: ej, nno3
+                };
+
+                if (!isNaN(ce)) { totalCE.s += ce; totalCE.c++; }
+                if (!isNaN(ph)) { totalPH.s += ph; totalPH.c++; }
+                if (!isNaN(ej)) { totalEj.s += ej; totalEj.c++; }
+                if (!isNaN(nno3)) { totalNNO3.s += nno3; totalNNO3.c++; }
+            });
+
+            const fmt = (o) => (o.c > 0 ? (o.s / o.c).toFixed(1) : '—');
+            const contentDiv = document.getElementById('graphs-view-content');
+            if (!contentDiv) return;
+
+            contentDiv.innerHTML = `
+                <div class="stat-cards-row">
+                    <div class="stat-mini-card"><div class="val">${fmt(totalEj)}%</div><div class="lbl">Ejecución promedio</div></div>
+                    <div class="stat-mini-card"><div class="val">${fmt(totalCE)}%</div><div class="lbl">CE promedio</div></div>
+                    <div class="stat-mini-card"><div class="val">${fmt(totalPH)}%</div><div class="lbl">pH promedio</div></div>
+                    <div class="stat-mini-card"><div class="val">${fmt(totalNNO3)}</div><div class="lbl">N-NO3 promedio</div></div>
+                </div>
+                <div class="charts-grid" id="bar-charts-grid"></div>
+            `;
+
+            // Ordenar por Sector, Bloque y Válvula
+            const sortedKeys = Object.keys(allValveData).sort((ka, kb) => {
+                const ma = allValveData[ka].meta, mb = allValveData[kb].meta;
+                const sa = parseInt(ma.sector) || 0, sb = parseInt(mb.sector) || 0;
+                if (sa !== sb) return sa - sb;
+                const ba = parseInt(ma.block) || 0, bb = parseInt(mb.block) || 0;
+                if (ba !== bb) return ba - bb;
+                return ma.valveNumber - mb.valveNumber;
+            });
+
+            const labels = sortedKeys.map(k => {
+                const m = allValveData[k].meta;
+                return `S${m.sector}-B${m.block}-V${m.valveNumber} (${m.variety || ''})`;
+            });
+
+            const getColors = data => data.map(v => (!isNaN(v) && v >= 90 && v <= 110) ? 'rgba(16, 185, 129, 0.75)' : 'rgba(239, 68, 68, 0.75)');
+            const getNNO3Colors = (data, keys) => data.map((v, i) => {
+                const m = allValveData[keys[i]].meta;
+                const limits = getLimitsForValve(m.valveNumber, m.sector, m.block);
+                if (!limits || !limits.no3) return (!isNaN(v) && v >= 150 && v <= 220) ? 'rgba(16, 185, 129, 0.75)' : 'rgba(239, 68, 68, 0.75)';
+                return (!isNaN(v) && v >= limits.no3[0] && v <= limits.no3[1]) ? 'rgba(16, 185, 129, 0.75)' : 'rgba(239, 68, 68, 0.75)';
+            });
+            const grid = document.getElementById('bar-charts-grid');
+
+            const mkBarChart = (title, chartData, colors, yAxisLabel, yMax, l1, l2) => {
+                const card = document.createElement('div');
+                card.className = 'chart-card';
+                card.style.gridColumn = '1 / -1';
+                const wrap = document.createElement('div');
+                wrap.className = 'chart-container';
+                wrap.style.height = '280px';
+                const canvas = document.createElement('canvas');
+                wrap.appendChild(canvas);
+                card.appendChild(wrap);
+                grid.appendChild(card);
+                
+                let annotations = {};
+                if (l1 !== null && l2 !== null) {
+                    annotations.l1 = { type:'line', yMin:l1, yMax:l1, borderColor:'#eab308', borderWidth:2, borderDash:[6,4] };
+                    annotations.l2 = { type:'line', yMin:l2, yMax:l2, borderColor:'#eab308', borderWidth:2, borderDash:[6,4] };
+                }
+
+                new Chart(canvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{ label: yAxisLabel, data: chartData, backgroundColor: colors, borderColor: colors.map(c => c.replace('0.75','1')), borderWidth: 1, borderRadius: 4 }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, max: yMax, title: { display: true, text: yAxisLabel, font: { size: 11 } } },
+                            x: { ticks: { maxRotation: 60, minRotation: 40, font: { size: 9 } }, grid: { display: false } }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: title, font: { size: 13, weight: '700' }, color: '#1a1a1a', padding: { bottom: 8 } },
+                            annotation: { annotations }
+                        }
+                    }
+                });
+            };
+
+            mkBarChart('Cumplimiento % Ejecución', sortedKeys.map(k => allValveData[k].ejecucion), getColors(sortedKeys.map(k => allValveData[k].ejecucion)), 'Cumplimiento (%)', 150, 90, 110);
+            mkBarChart('Cumplimiento Conductividad Eléctrica', sortedKeys.map(k => allValveData[k].ce), getColors(sortedKeys.map(k => allValveData[k].ce)), 'Cumplimiento (%)', 150, 90, 110);
+            mkBarChart('Cumplimiento pH', sortedKeys.map(k => allValveData[k].ph), getColors(sortedKeys.map(k => allValveData[k].ph)), 'Cumplimiento (%)', 150, 90, 110);
+            mkBarChart('Valor Promedio N-NO3', sortedKeys.map(k => allValveData[k].nno3), getNNO3Colors(sortedKeys.map(k => allValveData[k].nno3), sortedKeys), 'Valor Promedio', 300, null, null);
+        }
+
+        // Listeners para filtros de gráficas
+        ['filter-graphs-sector', 'filter-graphs-bloque', 'filter-graphs-valvula'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', () => {
+                    if (workbookData && validSheetMetas.length) {
+                        generateGraphsReport();
+                    }
+                });
+            }
+        });
+
+    </script>
+    <div id="print-container" style="display: none;"></div>
+    
+    <script>
+        async function generatePrintAllReport() {
+            if (!workbookData || !validSheetMetas.length) return alert('Por favor, carga un archivo Excel primero.');
+
+            const printBtn = document.getElementById('print-btn');
+            const originalText = printBtn.innerHTML;
+            printBtn.innerHTML = 'Preparando Páginas...';
+            printBtn.disabled = true;
+
+            const printContainer = document.getElementById('print-container');
+            printContainer.innerHTML = '';
+            
+            // 1. Mostrar contenedor y aplicar la clase is-printing para asegurar dimensiones visibles en el DOM
+            document.body.classList.add('is-printing');
+            printContainer.style.display = 'block';
+
+            // Re-ordenar por sector, bloque y válvula
+            const sortedMetas = [...validSheetMetas].sort((a, b) => {
+                const sa = parseInt(a.sector) || 0, sb = parseInt(b.sector) || 0;
+                if (sa !== sb) return sa - sb;
+                const ba = parseInt(a.block) || 0, bb = parseInt(b.block) || 0;
+                if (ba !== bb) return ba - bb;
+                return a.valveNumber - b.valveNumber;
+            });
+
+            const monthSelect = document.getElementById('month-select');
+            const monthText = monthSelect.options[monthSelect.selectedIndex]?.text || '';
+            const year = new Date().getFullYear();
+
+            // Generar contenedor para cada hoja (válvula)
+            sortedMetas.forEach(meta => {
+                const page = document.createElement('div');
+                page.className = 'print-page';
+                
+                // Encabezado formal de impresión para Flores El Ciprés
+                page.innerHTML = `
+                    <table class="print-header-table">
+                        <tr>
+                            <td rowspan="2" style="width: 15%; text-align: center; vertical-align: middle;">
+                                <img src="logo_tandil.png" alt="Logo Flores El Ciprés" style="max-width: 100px; max-height: 60px;">
+                            </td>
+                            <td colspan="5" class="title-cell" style="width: 70%;">
+                                FLORES EL CIPRÉS S.A.S<br>
+                                CONTROL DEL FERTIRRIEGO ROSA HIDROPONÍA<br>
+                                PRODUCCIÓN ROSA
+                            </td>
+                            <td style="width: 15%;">Versión 2<br>Diciembre 2023<br>Página 1 de 1</td>
+                        </tr>
+                        <tr style="background-color: #f3f4f6;">
+                            <td>AÑO: <strong>${year}</strong></td>
+                            <td>MES: <strong>${monthText.toUpperCase()}</strong></td>
+                            <td>SECTOR: <strong>${meta.sectorLabel}</strong></td>
+                            <td>BLOQUE: <strong>${meta.blockLabel}</strong></td>
+                            <td>VÁLVULA: <strong>${meta.valveNumber}</strong></td>
+                        </tr>
+                    </table>
+                `;
+
+                const ws = workbookData.Sheets[meta.sheetName];
+                const json = getSheetJson(ws);
+                if (json.length > 0) {
+                    const indices = findRowIndices(json);
+                    
+                    const contentWrapper = document.createElement('div');
+                    contentWrapper.className = 'print-content-wrapper';
+                    
+                    createTable(contentWrapper, json, indices);
+                    // Pasamos true como quinto argumento (isForPrint) para desactivar la animación
+                    createCharts(contentWrapper, json, meta.sheetName, indices, true);
+                    
+                    page.appendChild(contentWrapper);
+                } else {
+                    const empty = document.createElement('div');
+                    empty.textContent = "Hoja vacía o sin formato válido.";
+                    page.appendChild(empty);
+                }
+                
+                printContainer.appendChild(page);
+            });
+
+            // Dar un tiempo breve para el renderizado sincrónico del DOM
+            await new Promise(r => setTimeout(r, 200));
+
+            // 2. Convertir lienzos (<canvas>) a imágenes (<img>) en Base64 para garantizar que aparezcan impresas
+            const canvases = printContainer.querySelectorAll('canvas');
+            canvases.forEach(canvas => {
+                try {
+                    const img = document.createElement('img');
+                    img.src = canvas.toDataURL('image/png');
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '100%';
+                    img.style.display = 'block';
+                    img.style.margin = '0 auto';
+                    if (canvas.parentNode) {
+                        canvas.parentNode.replaceChild(img, canvas);
+                    }
+                } catch (e) {
+                    console.error('Error convirtiendo canvas a imagen:', e);
+                }
+            });
+
+            await new Promise(r => setTimeout(r, 100));
+
+            // Disparar ventana de impresión
+            window.print();
+            
+            // Retornar al estado original
+            setTimeout(() => {
+                document.body.classList.remove('is-printing');
+                printContainer.style.display = 'none';
+                printContainer.innerHTML = '';
+                printBtn.innerHTML = originalText;
+                printBtn.disabled = false;
+            }, 500);
+        }
+
+        /* ── RECUPERAR SESIÓN ── */
+        getFileFromDB().then(stored => {
+            if (stored?.data && stored?.filename) {
+                loadingEl.style.display = 'flex';
+                try {
+                    processAndDisplayWorkbook(stored.data, stored.filename);
+                } catch(e) { console.warn('Restore error', e); }
+                finally { loadingEl.style.display = 'none'; }
+            }
+        });
+
+        /* ── LÓGICA MÓVIL (MENÚ HAMBURGUESA) ── */
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+
+            function toggleMobileMenu() {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('open');
+            }
+
+            if (mobileMenuBtn && sidebar && overlay) {
+                mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+                overlay.addEventListener('click', toggleMobileMenu);
+            }
+            
+            // Cerrar el menú automáticamente en móvil si hacen clic en un botón de válvula
+            document.getElementById('blocks-container').addEventListener('click', (e) => {
+                if(e.target.classList.contains('valve-btn')) {
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.remove('open');
+                        overlay.classList.remove('open');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
