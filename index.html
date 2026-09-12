@@ -4,7 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Monitoreo MIRFE Flores El Ciprés</title>
+    <link rel="icon" type="image/png" href="logo_cipres_clean.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -65,14 +69,38 @@
             top: 0;
             z-index: 100;
         }
-        .header-left h1 {
-            font-size: 1.2rem;
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .header-brand-logo {
+            height: 60px;
+            width: auto;
+            max-width: 85px;
+            object-fit: contain;
+            transition: transform 0.2s ease;
+        }
+        .header-brand-logo:hover {
+            transform: scale(1.05);
+        }
+        .header-title-wrap h1 {
+            font-size: 1.25rem;
             font-weight: 800;
             margin: 0;
-            color: #2a7a2a;
+            color: #1b7a2b;
             display: flex;
             align-items: center;
             gap: 6px;
+            letter-spacing: -0.3px;
+        }
+        .header-subtitle {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #6b0c78;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            margin-top: 1px;
         }
         .header-right {
             display: flex;
@@ -129,6 +157,22 @@
         }
         .upload-btn:hover {
             background: var(--ink-200);
+        }
+        .refresh-btn {
+            background: #e0f2fe;
+            color: #0369a1;
+            border-color: #bae6fd;
+        }
+        .refresh-btn:hover {
+            background: #0284c7;
+            color: #ffffff;
+            border-color: #0284c7;
+        }
+        .refresh-btn.spinning svg {
+            animation: spinRefresh 0.8s linear infinite;
+        }
+        @keyframes spinRefresh {
+            100% { transform: rotate(360deg); }
         }
         #file-info {
             display: flex;
@@ -842,6 +886,9 @@
                 align-items: flex-start;
                 padding: 10px 15px;
             }
+            .header-brand-logo { height: 48px; max-width: 65px; }
+            .header-title-wrap h1 { font-size: 1.05rem; }
+            .header-subtitle { font-size: 0.65rem; }
             .header-right {
                 width: 100%;
                 justify-content: flex-start;
@@ -926,9 +973,12 @@
                 </svg>
             </button>
         </div>
-        <div class="header-left" style="display: flex; align-items: center; gap: 15px;">
-            <img src="mascota_mirfe.png" alt="Mascota MIRFE" style="height: 80px; width: 80px; object-fit: cover; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.4); border: 3px solid white; background: #fff;">
-            <h1>🌱 Monitoreo MIRFE Flores El Ciprés</h1>
+        <div class="header-left">
+            <img src="logo_cipres_clean.png" alt="Logo Flores El Ciprés" class="header-brand-logo">
+            <div class="header-title-wrap">
+                <h1>🌱 Monitoreo MIRFE Flores El Ciprés</h1>
+                <div class="header-subtitle">Sistema de Control de Fertirriego</div>
+            </div>
         </div>
         <div class="header-right">
             <div class="header-control">
@@ -951,6 +1001,16 @@
             </div>
             
             <span id="repo-status-badge">SIN CARGAR</span>
+            <span id="repo-load-status-msg" style="display:none;"></span>
+
+            <!-- Botón Limpiar Caché y Actualizar Datos -->
+            <button id="refresh-cache-btn" class="upload-btn refresh-btn" title="Limpiar caché del celular y recargar archivo actualizado">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+                </svg>
+                <span>Actualizar</span>
+            </button>
             
             <label for="file-upload" class="upload-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -1091,12 +1151,70 @@
             });
         });
 
+        /* ── GESTIÓN DE MESES Y FECHA ACTUAL ── */
+        const MONTH_NAMES = [
+            'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+            'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+        ];
+
+        function getCurrentMonthName() {
+            return MONTH_NAMES[new Date().getMonth()];
+        }
+
+        function detectMonthFromFileName(fileName) {
+            if (!fileName) return null;
+            const lower = fileName.toLowerCase();
+            // Si se llama "archivo original", corresponde por regla al mes actual de la fecha
+            if (lower.includes('archivo original') || lower.includes('archivo_original') || lower.includes('archivo-original') || lower.includes('original')) {
+                return getCurrentMonthName();
+            }
+            for (const m of MONTH_NAMES) {
+                if (lower.includes(m)) return m;
+            }
+            return null;
+        }
+
+        function setupMonthSelect() {
+            if (!monthSelect) return;
+            const cur = getCurrentMonthName();
+            Array.from(monthSelect.options).forEach(opt => {
+                if (opt.value === cur) {
+                    opt.textContent = `${opt.textContent.replace(/\s*\(.*?\)/g, '')} (Mes actual - Archivo Original)`;
+                }
+            });
+        }
+
+        /* ── NOTIFICACIONES FLOTANTES (TOAST) ── */
+        function showNotificationToast(msg, isSuccess = true) {
+            let toast = document.getElementById('app-notification-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'app-notification-toast';
+                toast.style.cssText = 'position:fixed; bottom:24px; right:20px; max-width:90vw; background:#0f172a; color:#f8fafc; padding:12px 20px; border-radius:30px; font-size:0.85rem; font-weight:600; box-shadow:0 10px 30px rgba(0,0,0,0.35); z-index:99999; display:flex; align-items:center; gap:10px; transition:all 0.3s ease; transform:translateY(60px); opacity:0; pointer-events:none; border:1px solid #334155;';
+                document.body.appendChild(toast);
+            }
+            const icon = isSuccess ? '✅' : 'ℹ️';
+            toast.innerHTML = `<span>${icon}</span> <span>${msg}</span>`;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+            if (window._toastTimer) clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(60px)';
+            }, 4000);
+        }
+
         /* ── EVENTOS DE CARGA ── */
         fileUpload.addEventListener('change', handleFile);
         clearFileBtn.addEventListener('click', () => clearFile(true));
         monthSelect.addEventListener('change', e => { if (e.target.value) loadExcelByMonth(e.target.value); });
 
-        /* ── INDEXEDDB ── */
+        const refreshCacheBtn = document.getElementById('refresh-cache-btn');
+        if (refreshCacheBtn) {
+            refreshCacheBtn.addEventListener('click', purgeAllCachesAndReload);
+        }
+
+        /* ── INDEXEDDB CON INFORMACIÓN DE ORIGEN Y FECHA ── */
         const dbName = "CamasPilotoDB", storeName = "excelFiles";
         function getDB() {
             return new Promise((resolve, reject) => {
@@ -1106,11 +1224,11 @@
                 req.onerror = e => reject(e.target.error);
             });
         }
-        function saveFileToDB(filename, arrayBuffer) {
+        function saveFileToDB(filename, arrayBuffer, source = 'server') {
             return getDB().then(db => new Promise((resolve, reject) => {
                 const tx = db.transaction(storeName, "readwrite");
                 const store = tx.objectStore(storeName);
-                const req = store.put({ filename, data: arrayBuffer }, "activeFile");
+                const req = store.put({ filename, data: arrayBuffer, source, savedAt: Date.now() }, "activeFile");
                 req.onsuccess = () => resolve();
                 req.onerror = e => reject(e.target.error);
             })).catch(err => console.warn("IndexedDB save error:", err));
@@ -1132,41 +1250,139 @@
             })).catch(() => {});
         }
 
-        /* ── CARGA DESDE EL SERVIDOR (GITHUB PAGES) ── */
+        /* ── LIMPIEZA TOTAL DE CACHÉ EN CELULARES Y NAVEGADORES ── */
+        async function purgeAllCachesAndReload() {
+            const btn = document.getElementById('refresh-cache-btn');
+            if (btn) {
+                btn.classList.add('spinning');
+                btn.disabled = true;
+            }
+
+            try {
+                showNotificationToast('Limpiando caché del dispositivo y buscando actualizaciones...');
+
+                // 1. Borrar archivo guardado en IndexedDB para no restaurar versiones viejas
+                await deleteFileFromDB();
+
+                // 2. Borrar cachés del navegador (CacheStorage de ServiceWorkers / PWA si existieran)
+                if ('caches' in window) {
+                    try {
+                        const cacheNames = await caches.keys();
+                        await Promise.all(cacheNames.map(k => caches.delete(k)));
+                    } catch(e){}
+                }
+
+                // 3. Limpiar almacenamiento local y de sesión
+                try { localStorage.clear(); } catch(e){}
+                try { sessionStorage.clear(); } catch(e){}
+
+                // 4. Forzar recarga limpia del archivo desde el servidor con bypass absoluto
+                const targetMonth = monthSelect.value || getCurrentMonthName();
+                monthSelect.value = targetMonth;
+                await loadExcelByMonth(targetMonth);
+
+                showNotificationToast('✓ Caché limpiado y archivo actualizado exitosamente.');
+            } catch (err) {
+                console.warn('Error en purga, recargando ventana:', err);
+                const cleanUrl = window.location.origin + window.location.pathname + '?nocache=' + Date.now();
+                window.location.replace(cleanUrl);
+            } finally {
+                if (btn) {
+                    btn.classList.remove('spinning');
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        /* ── CARGA DESDE EL SERVIDOR (GITHUB PAGES / LOCAL) CON ROTURA TOTAL DE CACHÉ ── */
         async function loadExcelByMonth(month) {
+            const curMonth = getCurrentMonthName();
+            const isCurrentMonth = (month.toLowerCase() === curMonth);
+
             repoStatusBadge.textContent = 'Cargando…';
             repoStatusBadge.classList.remove('loaded');
-            if(repoStatusMsg) repoStatusMsg.textContent = `Buscando archivo de ${month}…`;
+            if (repoStatusMsg) {
+                repoStatusMsg.textContent = isCurrentMonth 
+                    ? `Buscando 'archivo original' para el mes actual (${month})…` 
+                    : `Buscando archivo de ${month}…`;
+            }
             clearFile(false);
             loadingEl.style.display = 'flex';
 
-            const tryFetch = async (ext) => {
-                const fileName = `${month}${ext}`;
-                const r = await fetch(`./${fileName}?t=${new Date().getTime()}`);
+            const extensions = ['.xlsx', '.xlsm', '.xls'];
+            let fileCandidates = [];
+
+            if (isCurrentMonth) {
+                // El archivo del mes actual de la fecha se llama "archivo original"
+                const baseNames = [
+                    'archivo original',
+                    'archivo_original',
+                    'Archivo Original',
+                    'Archivo_Original',
+                    'archivo-original',
+                    month // Respaldo por si está subido con el nombre del mes
+                ];
+                baseNames.forEach(base => {
+                    extensions.forEach(ext => fileCandidates.push(`${base}${ext}`));
+                });
+            } else {
+                // Los demás meses siguen con la misma lógica
+                extensions.forEach(ext => fileCandidates.push(`${month}${ext}`));
+            }
+
+            // Petición con cabeceras estrictas y parámetro aleatorio para que los celulares nunca sirvan una versión en caché
+            const tryFetchCandidate = async (fileName) => {
+                const encoded = encodeURI(fileName);
+                const nonce = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+                const r = await fetch(`./${encoded}?_cb=${nonce}`, {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return { buf: await r.arrayBuffer(), fileName };
             };
 
             try {
-                let result;
-                try {
-                    result = await tryFetch('.xlsx');
-                } catch (e) {
+                let result = null;
+                let lastError = null;
+
+                for (const candidate of fileCandidates) {
                     try {
-                        result = await tryFetch('.xlsm');
-                    } catch (e2) {
-                        result = await tryFetch('.xls');
+                        result = await tryFetchCandidate(candidate);
+                        if (result && result.buf) break;
+                    } catch (e) {
+                        lastError = e;
                     }
+                }
+
+                if (!result) {
+                    throw lastError || new Error('No se encontró el archivo solicitado.');
                 }
                 
                 processAndDisplayWorkbook(result.buf, result.fileName);
-                saveFileToDB(result.fileName, result.buf);
+                saveFileToDB(result.fileName, result.buf, 'server');
                 repoStatusBadge.textContent = '✓ Cargado';
                 repoStatusBadge.classList.add('loaded');
-                if(repoStatusMsg) repoStatusMsg.textContent = `Archivo ${result.fileName} listo.`;
+                if (repoStatusMsg) {
+                    if (isCurrentMonth) {
+                        repoStatusMsg.textContent = `Archivo '${result.fileName}' cargado correctamente como mes actual (${month}).`;
+                    } else {
+                        repoStatusMsg.textContent = `Archivo '${result.fileName}' listo.`;
+                    }
+                }
             } catch (err) {
                 repoStatusBadge.textContent = 'Error';
-                if(repoStatusMsg) repoStatusMsg.textContent = `No se encontró el archivo ${month} (.xlsx/.xlsm) en GitHub. Verifica haberlo subido.`;
+                if (repoStatusMsg) {
+                    if (isCurrentMonth) {
+                        repoStatusMsg.textContent = `No se encontró 'archivo original' (.xlsx/.xlsm) para el mes actual (${month}).`;
+                    } else {
+                        repoStatusMsg.textContent = `No se encontró el archivo ${month} (.xlsx/.xlsm) en GitHub. Verifica haberlo subido.`;
+                    }
+                }
             } finally {
                 loadingEl.style.display = 'none';
             }
@@ -1183,7 +1399,9 @@
                 try {
                     const buf = ev.target.result;
                     processAndDisplayWorkbook(buf, file.name);
-                    saveFileToDB(file.name, buf);
+                    saveFileToDB(file.name, buf, 'local');
+                    const detected = detectMonthFromFileName(file.name);
+                    if (detected && monthSelect) monthSelect.value = detected;
                 } catch (err) {
                     console.error(err);
                     showInlineError(sheetContentContainer, 'Error al procesar el archivo. Asegúrate de que es un Excel válido.');
@@ -1206,6 +1424,14 @@
             activeCharts = [];
             fileInfoEl.style.display = 'none';
             fileUpload.value = '';
+            if (deleteFromDB && monthSelect) {
+                monthSelect.value = '';
+                if (repoStatusBadge) {
+                    repoStatusBadge.textContent = 'SIN CARGAR';
+                    repoStatusBadge.classList.remove('loaded');
+                }
+                if (repoStatusMsg) repoStatusMsg.textContent = '';
+            }
             const sectorFilterWrap = document.getElementById('sidebar-sector-filter-wrap');
             if (sectorFilterWrap) sectorFilterWrap.style.display = 'none';
             const filterSecEl = document.getElementById('filter-graphs-sector');
@@ -2441,7 +2667,8 @@
             });
 
             const monthSelect = document.getElementById('month-select');
-            const monthText = monthSelect.options[monthSelect.selectedIndex]?.text || '';
+            const selectedMonthVal = monthSelect.value || (typeof detectMonthFromFileName === 'function' && detectMonthFromFileName(document.getElementById('file-name')?.textContent)) || (typeof getCurrentMonthName === 'function' ? getCurrentMonthName() : 'SEPTIEMBRE');
+            const monthText = String(selectedMonthVal).toUpperCase();
             const year = new Date().getFullYear();
 
             // Generar contenedor para cada hoja (válvula)
@@ -2454,7 +2681,7 @@
                     <table class="print-header-table">
                         <tr>
                             <td rowspan="2" style="width: 15%; text-align: center; vertical-align: middle;">
-                                <img src="logo_tandil.png" alt="Logo Flores El Ciprés" style="max-width: 100px; max-height: 60px;">
+                                <img src="logo_cipres_clean.png" alt="Logo Flores El Ciprés" style="max-width: 95px; max-height: 65px; object-fit: contain;">
                             </td>
                             <td colspan="5" class="title-cell" style="width: 70%;">
                                 FLORES EL CIPRÉS S.A.S<br>
@@ -2531,16 +2758,100 @@
             }, 500);
         }
 
-        /* ── RECUPERAR SESIÓN ── */
-        getFileFromDB().then(stored => {
-            if (stored?.data && stored?.filename) {
-                loadingEl.style.display = 'flex';
-                try {
-                    processAndDisplayWorkbook(stored.data, stored.filename);
-                } catch(e) { console.warn('Restore error', e); }
-                finally { loadingEl.style.display = 'none'; }
+        /* ── INICIALIZACIÓN Y RECUPERAR SESIÓN CON VERIFICACIÓN AUTOMÁTICA EN SEGUNDO PLANO ── */
+        setupMonthSelect();
+
+        // Si la URL contiene parámetro de rotura de caché (?nocache o ?refresh), limpiar y forzar recarga
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasNoCacheParam = urlParams.has('nocache') || urlParams.has('refresh');
+
+        if (hasNoCacheParam) {
+            deleteFileFromDB().then(() => {
+                const curMonth = getCurrentMonthName();
+                if (monthSelect) monthSelect.value = curMonth;
+                loadExcelByMonth(curMonth);
+            });
+        } else {
+            getFileFromDB().then(stored => {
+                if (stored?.data && stored?.filename) {
+                    loadingEl.style.display = 'flex';
+                    try {
+                        processAndDisplayWorkbook(stored.data, stored.filename);
+                        const detected = detectMonthFromFileName(stored.filename);
+                        if (detected && monthSelect) monthSelect.value = detected;
+                    } catch(e) { 
+                        console.warn('Restore error', e); 
+                    } finally { 
+                        loadingEl.style.display = 'none'; 
+                    }
+
+                    // Si el archivo proviene del servidor, verificar en segundo plano si hay una versión más nueva
+                    if (stored.source !== 'local') {
+                        setTimeout(() => checkServerForNewerFile(stored), 800);
+                    }
+                } else {
+                    // Si no hay archivo guardado en el navegador, cargar el mes actual
+                    const curMonth = getCurrentMonthName();
+                    if (monthSelect) {
+                        monthSelect.value = curMonth;
+                        loadExcelByMonth(curMonth);
+                    }
+                }
+            });
+        }
+
+        async function checkServerForNewerFile(stored) {
+            try {
+                const targetMonth = monthSelect?.value || detectMonthFromFileName(stored.filename) || getCurrentMonthName();
+                const curMonth = getCurrentMonthName();
+                const isCurrentMonth = (targetMonth.toLowerCase() === curMonth);
+
+                const extensions = ['.xlsx', '.xlsm', '.xls'];
+                let fileCandidates = [];
+                if (isCurrentMonth) {
+                    const baseNames = ['archivo original', 'archivo_original', 'Archivo Original', 'Archivo_Original', 'archivo-original', targetMonth];
+                    baseNames.forEach(base => extensions.forEach(ext => fileCandidates.push(`${base}${ext}`)));
+                } else {
+                    extensions.forEach(ext => fileCandidates.push(`${targetMonth}${ext}`));
+                }
+
+                for (const candidate of fileCandidates) {
+                    const encoded = encodeURI(candidate);
+                    const nonce = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+                    const res = await fetch(`./${encoded}?_check=${nonce}`, {
+                        cache: 'no-store',
+                        headers: {
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache',
+                            'Expires': '0'
+                        }
+                    });
+
+                    if (res.ok) {
+                        const newBuf = await res.arrayBuffer();
+                        if (newBuf.byteLength !== stored.data.byteLength || !areArrayBuffersEqual(newBuf, stored.data)) {
+                            console.log(`Nueva versión encontrada para ${candidate}. Actualizando vista automáticamente...`);
+                            processAndDisplayWorkbook(newBuf, candidate);
+                            saveFileToDB(candidate, newBuf, 'server');
+                            showNotificationToast(`✓ Se detectó y cargó una versión más reciente de '${candidate}'.`);
+                        }
+                        break;
+                    }
+                }
+            } catch (e) {
+                console.debug('Verificación en segundo plano finalizada:', e);
             }
-        });
+        }
+
+        function areArrayBuffersEqual(buf1, buf2) {
+            if (buf1.byteLength !== buf2.byteLength) return false;
+            const a = new Uint8Array(buf1), b = new Uint8Array(buf2);
+            const samplePoints = Math.min(a.length, 1000);
+            for (let i = 0; i < samplePoints; i++) {
+                if (a[i] !== b[i]) return false;
+            }
+            return true;
+        }
 
         /* ── LÓGICA MÓVIL (MENÚ HAMBURGUESA) ── */
         document.addEventListener('DOMContentLoaded', () => {
