@@ -174,6 +174,27 @@
         @keyframes spinRefresh {
             100% { transform: rotate(360deg); }
         }
+        .offline-sync-btn {
+            background: #ecfdf5;
+            color: #065f46;
+            border-color: #a7f3d0;
+            font-weight: 600;
+        }
+        .offline-sync-btn:hover {
+            background: #10b981;
+            color: #ffffff;
+            border-color: #10b981;
+        }
+        .offline-sync-btn.syncing svg {
+            animation: bounceDownload 0.7s infinite alternate;
+        }
+        @keyframes bounceDownload {
+            0% { transform: translateY(-2px); }
+            100% { transform: translateY(2px); }
+        }
+        #repo-status-badge.offline {
+            background: #d97706;
+        }
         #file-info {
             display: flex;
             align-items: center;
@@ -1011,6 +1032,15 @@
                 </svg>
                 <span>Actualizar</span>
             </button>
+
+            <!-- Botón Guardar Últimos 3 Meses para Modo Offline -->
+            <button id="sync-offline-btn" class="upload-btn offline-sync-btn" title="Descargar y guardar los últimos 3 meses en el celular para trabajar sin internet en campo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                </svg>
+                <span>💾 Guardar 3 Meses (Offline)</span>
+            </button>
             
             <label for="file-upload" class="upload-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -1214,7 +1244,7 @@
             refreshCacheBtn.addEventListener('click', purgeAllCachesAndReload);
         }
 
-        /* ── INDEXEDDB CON INFORMACIÓN DE ORIGEN Y FECHA ── */
+        /* ── INDEXEDDB CON INFORMACIÓN DE ORIGEN, FECHA Y MULTI-MES OFFLINE ── */
         const dbName = "CamasPilotoDB", storeName = "excelFiles";
         function getDB() {
             return new Promise((resolve, reject) => {
@@ -1250,6 +1280,201 @@
             })).catch(() => {});
         }
 
+        /* ── GESTIÓN DE ALMACENAMIENTO DE MESES EN DISPOSITIVO (OFFLINE) ── */
+        function saveMonthToDB(monthKey, filename, arrayBuffer, source = 'server') {
+            if (!monthKey) return Promise.resolve();
+            const key = `month_${monthKey.toLowerCase()}`;
+            return getDB().then(db => new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, "readwrite");
+                const store = tx.objectStore(storeName);
+                const req = store.put({ month: monthKey.toLowerCase(), filename, data: arrayBuffer, source, savedAt: Date.now() }, key);
+                req.onsuccess = () => resolve();
+                req.onerror = e => reject(e.target.error);
+            })).catch(err => console.warn("IndexedDB saveMonth error:", err));
+        }
+
+        function getMonthFromDB(monthKey) {
+            if (!monthKey) return Promise.resolve(null);
+            const key = `month_${monthKey.toLowerCase()}`;
+            return getDB().then(db => new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, "readonly");
+                const req = tx.objectStore(storeName).get(key);
+                req.onsuccess = e => resolve(e.target.result);
+                req.onerror = e => reject(e.target.error);
+            })).catch(() => null);
+        }
+
+        function getAllStoredMonthKeys() {
+            return getDB().then(db => new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, "readonly");
+                const store = tx.objectStore(storeName);
+                if (store.getAllKeys) {
+                    const req = store.getAllKeys();
+                    req.onsuccess = e => {
+                        const keys = e.target.result || [];
+                        const months = keys
+                            .filter(k => typeof k === 'string' && k.startsWith('month_'))
+                            .map(k => k.replace('month_', ''));
+                        resolve(months);
+                    };
+                    req.onerror = e => reject(e.target.error);
+                } else {
+                    const cursorReq = store.openCursor();
+                    const months = [];
+                    cursorReq.onsuccess = e => {
+                        const cursor = e.target.result;
+                        if (cursor) {
+                            if (typeof cursor.key === 'string' && cursor.key.startsWith('month_')) {
+                                months.push(cursor.key.replace('month_', ''));
+                            }
+                            cursor.continue();
+                        } else {
+                            resolve(months);
+                        }
+                    };
+                    cursorReq.onerror = e => reject(e.target.error);
+                }
+            })).catch(() => []);
+        }
+
+        function getLast3Months() {
+            const curIdx = new Date().getMonth();
+            return [
+                MONTH_NAMES[curIdx],
+                MONTH_NAMES[(curIdx - 1 + 12) % 12],
+                MONTH_NAMES[(curIdx - 2 + 12) % 12]
+            ];
+        }
+
+        async function updateMonthSelectIndicators() {
+            if (!monthSelect) return;
+            const cur = getCurrentMonthName();
+            const storedMonths = await getAllStoredMonthKeys();
+            const storedSet = new Set(storedMonths.map(m => m.toLowerCase()));
+
+            Array.from(monthSelect.options).forEach(opt => {
+                if (!opt.value) return;
+                const val = opt.value.toLowerCase();
+                const baseName = val.charAt(0).toUpperCase() + val.slice(1);
+                const isCurrent = (val === cur);
+                const isStored = storedSet.has(val);
+
+                let label = baseName;
+                if (isCurrent) {
+                    label += ' (Mes actual - Archivo Original)';
+                }
+                if (isStored) {
+                    label = `💾 ${label}`;
+                }
+                opt.textContent = label;
+            });
+        }
+
+        /* ── DESCARGA DE ARCHIVO DESDE SERVIDOR CON BYPASS DE CACHÉ ── */
+        async function fetchMonthFromServer(month) {
+            const curMonth = getCurrentMonthName();
+            const isCurrentMonth = (month.toLowerCase() === curMonth);
+            const extensions = ['.xlsx', '.xlsm', '.xls'];
+            let fileCandidates = [];
+
+            if (isCurrentMonth) {
+                const baseNames = [
+                    'archivo original',
+                    'archivo_original',
+                    'Archivo Original',
+                    'Archivo_Original',
+                    'archivo-original',
+                    month
+                ];
+                baseNames.forEach(base => {
+                    extensions.forEach(ext => fileCandidates.push(`${base}${ext}`));
+                });
+            } else {
+                extensions.forEach(ext => fileCandidates.push(`${month}${ext}`));
+            }
+
+            for (const candidate of fileCandidates) {
+                try {
+                    const encoded = encodeURI(candidate);
+                    const nonce = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+                    const r = await fetch(`./${encoded}?_cb=${nonce}`, {
+                        cache: 'no-store',
+                        headers: {
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache',
+                            'Expires': '0'
+                        }
+                    });
+                    if (r.ok) {
+                        const buf = await r.arrayBuffer();
+                        return { buf, fileName: candidate, month };
+                    }
+                } catch (e) {
+                    // Seguir intentando con los otros candidatos
+                }
+            }
+            return null;
+        }
+
+        /* ── SINCRONIZACIÓN OFFLINE DE LOS ÚLTIMOS 3 MESES ── */
+        async function syncOfflineMonths(interactive = false) {
+            const btn = document.getElementById('sync-offline-btn');
+            if (btn) {
+                btn.classList.add('syncing');
+                btn.disabled = true;
+            }
+
+            const targetMonths = getLast3Months();
+            if (interactive) {
+                showNotificationToast(`Descargando últimos 3 meses (${targetMonths.join(', ')}) para uso sin internet...`);
+            }
+
+            let savedCount = 0;
+            const failedMonths = [];
+
+            for (const m of targetMonths) {
+                try {
+                    const res = await fetchMonthFromServer(m);
+                    if (res && res.buf) {
+                        await saveMonthToDB(m, res.fileName, res.buf, 'server');
+                        savedCount++;
+                    } else {
+                        const existing = await getMonthFromDB(m);
+                        if (existing && existing.data) {
+                            savedCount++;
+                        } else {
+                            failedMonths.push(m);
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`Error al sincronizar mes ${m}:`, err);
+                    const existing = await getMonthFromDB(m);
+                    if (existing && existing.data) {
+                        savedCount++;
+                    } else {
+                        failedMonths.push(m);
+                    }
+                }
+            }
+
+            await updateMonthSelectIndicators();
+
+            if (btn) {
+                btn.classList.remove('syncing');
+                btn.disabled = false;
+            }
+
+            if (interactive) {
+                if (failedMonths.length === 0) {
+                    showNotificationToast(`✓ ¡3 meses guardados en el dispositivo! Disponibles sin conexión (${targetMonths.join(', ')}).`);
+                } else if (savedCount > 0) {
+                    showNotificationToast(`✓ Se guardaron ${savedCount} mes(es) en el celular. No se encontraron en servidor: ${failedMonths.join(', ')}.`);
+                } else {
+                    showNotificationToast(`No se pudieron descargar los meses. Verifica tu conexión a internet.`, false);
+                }
+            }
+        }
+
         /* ── LIMPIEZA TOTAL DE CACHÉ EN CELULARES Y NAVEGADORES ── */
         async function purgeAllCachesAndReload() {
             const btn = document.getElementById('refresh-cache-btn');
@@ -1281,6 +1506,11 @@
                 monthSelect.value = targetMonth;
                 await loadExcelByMonth(targetMonth);
 
+                // 5. Re-sincronizar los 3 meses en background para que queden actualizados
+                if (navigator.onLine) {
+                    syncOfflineMonths(false);
+                }
+
                 showNotificationToast('✓ Caché limpiado y archivo actualizado exitosamente.');
             } catch (err) {
                 console.warn('Error en purga, recargando ventana:', err);
@@ -1294,13 +1524,13 @@
             }
         }
 
-        /* ── CARGA DESDE EL SERVIDOR (GITHUB PAGES / LOCAL) CON ROTURA TOTAL DE CACHÉ ── */
+        /* ── CARGA DESDE EL SERVIDOR O MEMORIA LOCAL (OFFLINE) ── */
         async function loadExcelByMonth(month) {
             const curMonth = getCurrentMonthName();
             const isCurrentMonth = (month.toLowerCase() === curMonth);
 
             repoStatusBadge.textContent = 'Cargando…';
-            repoStatusBadge.classList.remove('loaded');
+            repoStatusBadge.classList.remove('loaded', 'offline');
             if (repoStatusMsg) {
                 repoStatusMsg.textContent = isCurrentMonth 
                     ? `Buscando 'archivo original' para el mes actual (${month})…` 
@@ -1309,78 +1539,89 @@
             clearFile(false);
             loadingEl.style.display = 'flex';
 
-            const extensions = ['.xlsx', '.xlsm', '.xls'];
-            let fileCandidates = [];
-
-            if (isCurrentMonth) {
-                // El archivo del mes actual de la fecha se llama "archivo original"
-                const baseNames = [
-                    'archivo original',
-                    'archivo_original',
-                    'Archivo Original',
-                    'Archivo_Original',
-                    'archivo-original',
-                    month // Respaldo por si está subido con el nombre del mes
-                ];
-                baseNames.forEach(base => {
-                    extensions.forEach(ext => fileCandidates.push(`${base}${ext}`));
-                });
-            } else {
-                // Los demás meses siguen con la misma lógica
-                extensions.forEach(ext => fileCandidates.push(`${month}${ext}`));
+            // 1. Si el dispositivo no tiene conexión a internet, cargar directo desde memoria IndexedDB
+            if (!navigator.onLine) {
+                try {
+                    const stored = await getMonthFromDB(month);
+                    if (stored && stored.data) {
+                        processAndDisplayWorkbook(stored.data, stored.filename);
+                        saveFileToDB(stored.filename, stored.data, stored.source || 'server');
+                        repoStatusBadge.textContent = '📴 Offline (Guardado)';
+                        repoStatusBadge.classList.add('offline');
+                        if (repoStatusMsg) {
+                            repoStatusMsg.textContent = `Modo sin conexión: visualizando datos guardados de ${month}.`;
+                        }
+                        showNotificationToast(`Modo sin internet: Cargado '${stored.filename}' desde la memoria del celular.`);
+                        return;
+                    } else {
+                        repoStatusBadge.textContent = '📴 Sin conexión';
+                        repoStatusBadge.classList.add('offline');
+                        if (repoStatusMsg) {
+                            repoStatusMsg.textContent = `Sin internet y no hay datos guardados en el celular para ${month}.`;
+                        }
+                        showNotificationToast(`Sin internet: No hay datos guardados para el mes de ${month}.`, false);
+                        return;
+                    }
+                } finally {
+                    loadingEl.style.display = 'none';
+                }
             }
 
-            // Petición con cabeceras estrictas y parámetro aleatorio para que los celulares nunca sirvan una versión en caché
-            const tryFetchCandidate = async (fileName) => {
-                const encoded = encodeURI(fileName);
-                const nonce = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-                const r = await fetch(`./${encoded}?_cb=${nonce}`, {
-                    cache: 'no-store',
-                    headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache',
-                        'Expires': '0'
-                    }
-                });
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return { buf: await r.arrayBuffer(), fileName };
-            };
-
+            // 2. Si hay conexión, intentar descargar del servidor
             try {
-                let result = null;
-                let lastError = null;
+                const result = await fetchMonthFromServer(month);
 
-                for (const candidate of fileCandidates) {
-                    try {
-                        result = await tryFetchCandidate(candidate);
-                        if (result && result.buf) break;
-                    } catch (e) {
-                        lastError = e;
+                if (result && result.buf) {
+                    processAndDisplayWorkbook(result.buf, result.fileName);
+                    await saveFileToDB(result.fileName, result.buf, 'server');
+                    await saveMonthToDB(month, result.fileName, result.buf, 'server');
+                    await updateMonthSelectIndicators();
+
+                    repoStatusBadge.textContent = '✓ Cargado';
+                    repoStatusBadge.classList.add('loaded');
+                    repoStatusBadge.classList.remove('offline');
+                    if (repoStatusMsg) {
+                        if (isCurrentMonth) {
+                            repoStatusMsg.textContent = `Archivo '${result.fileName}' cargado correctamente como mes actual (${month}).`;
+                        } else {
+                            repoStatusMsg.textContent = `Archivo '${result.fileName}' listo.`;
+                        }
                     }
-                }
-
-                if (!result) {
-                    throw lastError || new Error('No se encontró el archivo solicitado.');
-                }
-                
-                processAndDisplayWorkbook(result.buf, result.fileName);
-                saveFileToDB(result.fileName, result.buf, 'server');
-                repoStatusBadge.textContent = '✓ Cargado';
-                repoStatusBadge.classList.add('loaded');
-                if (repoStatusMsg) {
-                    if (isCurrentMonth) {
-                        repoStatusMsg.textContent = `Archivo '${result.fileName}' cargado correctamente como mes actual (${month}).`;
+                } else {
+                    // Fallback a IndexedDB si en el servidor no está o dio error
+                    const fallback = await getMonthFromDB(month);
+                    if (fallback && fallback.data) {
+                        processAndDisplayWorkbook(fallback.data, fallback.filename);
+                        await saveFileToDB(fallback.filename, fallback.data, fallback.source || 'server');
+                        repoStatusBadge.textContent = '📴 Modo Offline';
+                        repoStatusBadge.classList.add('offline');
+                        if (repoStatusMsg) {
+                            repoStatusMsg.textContent = `Servidor no disponible. Usando datos guardados de ${month}.`;
+                        }
+                        showNotificationToast(`No se encontró en servidor. Se cargaron datos guardados de '${fallback.filename}'.`);
                     } else {
-                        repoStatusMsg.textContent = `Archivo '${result.fileName}' listo.`;
+                        throw new Error('No se encontró el archivo solicitado.');
                     }
                 }
             } catch (err) {
-                repoStatusBadge.textContent = 'Error';
-                if (repoStatusMsg) {
-                    if (isCurrentMonth) {
-                        repoStatusMsg.textContent = `No se encontró 'archivo original' (.xlsx/.xlsm) para el mes actual (${month}).`;
-                    } else {
-                        repoStatusMsg.textContent = `No se encontró el archivo ${month} (.xlsx/.xlsm) en GitHub. Verifica haberlo subido.`;
+                const fallback = await getMonthFromDB(month);
+                if (fallback && fallback.data) {
+                    processAndDisplayWorkbook(fallback.data, fallback.filename);
+                    await saveFileToDB(fallback.filename, fallback.data, fallback.source || 'server');
+                    repoStatusBadge.textContent = '📴 Modo Offline';
+                    repoStatusBadge.classList.add('offline');
+                    if (repoStatusMsg) {
+                        repoStatusMsg.textContent = `Sin conexión. Mostrando datos guardados de '${fallback.filename}'.`;
+                    }
+                    showNotificationToast(`Sin conexión: Mostrando datos guardados de '${fallback.filename}'.`);
+                } else {
+                    repoStatusBadge.textContent = 'Error';
+                    if (repoStatusMsg) {
+                        if (isCurrentMonth) {
+                            repoStatusMsg.textContent = `No se encontró 'archivo original' (.xlsx/.xlsm) para el mes actual (${month}).`;
+                        } else {
+                            repoStatusMsg.textContent = `No se encontró el archivo ${month} (.xlsx/.xlsm).`;
+                        }
                     }
                 }
             } finally {
@@ -1395,13 +1636,17 @@
             clearFile(false);
             loadingEl.style.display = 'flex';
             const reader = new FileReader();
-            reader.onload = ev => {
+            reader.onload = async ev => {
                 try {
                     const buf = ev.target.result;
                     processAndDisplayWorkbook(buf, file.name);
-                    saveFileToDB(file.name, buf, 'local');
+                    await saveFileToDB(file.name, buf, 'local');
                     const detected = detectMonthFromFileName(file.name);
-                    if (detected && monthSelect) monthSelect.value = detected;
+                    if (detected) {
+                        if (monthSelect) monthSelect.value = detected;
+                        await saveMonthToDB(detected, file.name, buf, 'local');
+                        await updateMonthSelectIndicators();
+                    }
                 } catch (err) {
                     console.error(err);
                     showInlineError(sheetContentContainer, 'Error al procesar el archivo. Asegúrate de que es un Excel válido.');
@@ -2758,8 +3003,32 @@
             }, 500);
         }
 
-        /* ── INICIALIZACIÓN Y RECUPERAR SESIÓN CON VERIFICACIÓN AUTOMÁTICA EN SEGUNDO PLANO ── */
+        /* ── INICIALIZACIÓN Y RECUPERAR SESIÓN CON SOPORTE OFFLINE ── */
         setupMonthSelect();
+        updateMonthSelectIndicators();
+
+        // Botón Guardar Últimos 3 Meses para uso Offline
+        const syncOfflineBtn = document.getElementById('sync-offline-btn');
+        if (syncOfflineBtn) {
+            syncOfflineBtn.addEventListener('click', () => syncOfflineMonths(true));
+        }
+
+        // Listeners de conectividad (Online / Offline)
+        window.addEventListener('online', () => {
+            showNotificationToast('✓ Conexión a internet reanudada. Verificando actualizaciones...');
+            if (repoStatusBadge.classList.contains('offline')) {
+                repoStatusBadge.textContent = 'Conectado';
+                repoStatusBadge.classList.remove('offline');
+            }
+            syncOfflineMonths(false);
+        });
+
+        window.addEventListener('offline', () => {
+            showNotificationToast('📴 Sin conexión a internet. Los datos guardados siguen disponibles.', false);
+            repoStatusBadge.textContent = '📴 Offline';
+            repoStatusBadge.classList.add('offline');
+            repoStatusBadge.classList.remove('loaded');
+        });
 
         // Si la URL contiene parámetro de rotura de caché (?nocache o ?refresh), limpiar y forzar recarga
         const urlParams = new URLSearchParams(window.location.search);
@@ -2770,9 +3039,13 @@
                 const curMonth = getCurrentMonthName();
                 if (monthSelect) monthSelect.value = curMonth;
                 loadExcelByMonth(curMonth);
+                if (navigator.onLine) {
+                    setTimeout(() => syncOfflineMonths(false), 2000);
+                }
             });
         } else {
-            getFileFromDB().then(stored => {
+            getFileFromDB().then(async stored => {
+                const curMonth = getCurrentMonthName();
                 if (stored?.data && stored?.filename) {
                     loadingEl.style.display = 'flex';
                     try {
@@ -2785,16 +3058,17 @@
                         loadingEl.style.display = 'none'; 
                     }
 
-                    // Si el archivo proviene del servidor, verificar en segundo plano si hay una versión más nueva
-                    if (stored.source !== 'local') {
+                    // Si el archivo proviene del servidor y hay conexión, verificar en segundo plano
+                    if (navigator.onLine && stored.source !== 'local') {
                         setTimeout(() => checkServerForNewerFile(stored), 800);
+                        setTimeout(() => syncOfflineMonths(false), 2500);
                     }
                 } else {
                     // Si no hay archivo guardado en el navegador, cargar el mes actual
-                    const curMonth = getCurrentMonthName();
-                    if (monthSelect) {
-                        monthSelect.value = curMonth;
-                        loadExcelByMonth(curMonth);
+                    if (monthSelect) monthSelect.value = curMonth;
+                    await loadExcelByMonth(curMonth);
+                    if (navigator.onLine) {
+                        setTimeout(() => syncOfflineMonths(false), 2500);
                     }
                 }
             });
@@ -2832,7 +3106,9 @@
                         if (newBuf.byteLength !== stored.data.byteLength || !areArrayBuffersEqual(newBuf, stored.data)) {
                             console.log(`Nueva versión encontrada para ${candidate}. Actualizando vista automáticamente...`);
                             processAndDisplayWorkbook(newBuf, candidate);
-                            saveFileToDB(candidate, newBuf, 'server');
+                            await saveFileToDB(candidate, newBuf, 'server');
+                            await saveMonthToDB(targetMonth, candidate, newBuf, 'server');
+                            await updateMonthSelectIndicators();
                             showNotificationToast(`✓ Se detectó y cargó una versión más reciente de '${candidate}'.`);
                         }
                         break;
