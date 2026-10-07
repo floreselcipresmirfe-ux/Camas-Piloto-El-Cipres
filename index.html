@@ -755,104 +755,238 @@
             font-weight: 500;
         }
 
-        /* ── ESTILOS DE IMPRESIÓN MASIVA (PDF) ── */
+
+
+        /* ── ESTILOS DE IMPRESIÓN FORMAL EN HOJA HORIZONTAL (LANDSCAPE) ── */
+        @page {
+            size: landscape;
+            margin: 4mm 5mm 4mm 5mm;
+        }
+
         @media print {
-            .app-header, .sidebar, .tab-bar, #loading, footer, .content-area {
+            .app-header, .sidebar, .tab-bar, #loading, footer, .content-area, .mobile-overlay, #app-notification-toast {
                 display: none !important;
             }
-            body {
-                background: white !important;
+            html, body {
+                background: #ffffff !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             #print-container {
                 display: block !important;
-                width: 100%;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                position: static !important;
             }
             
             .print-page {
-                page-break-after: always;
-                display: flex;
-                flex-direction: column;
-                height: 98vh;
-                padding: 10px;
-                box-sizing: border-box;
+                page-break-before: auto !important;
+                page-break-after: always !important;
+                page-break-inside: avoid !important;
+                break-before: auto !important;
+                break-after: page !important;
+                break-inside: avoid !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 195mm !important;
+                max-height: 195mm !important;
+                box-sizing: border-box !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: flex-start !important;
+                overflow: hidden !important;
+                background: #ffffff !important;
             }
             .print-page:last-child {
-                page-break-after: auto;
+                page-break-after: auto !important;
+                break-after: auto !important;
             }
 
             /* Tabla de Encabezado Formal */
             .print-header-table {
-                width: 100%;
-                border-collapse: collapse;
-                border: 2px solid black;
-                font-family: Arial, sans-serif;
-                font-size: 8pt;
-                margin-bottom: 5px;
+                width: 100% !important;
+                border-collapse: collapse !important;
+                border: 1.5px solid #000000 !important;
+                font-family: Arial, Helvetica, sans-serif !important;
+                font-size: 7pt !important;
+                line-height: 1.15 !important;
+                margin: 0 0 1.5mm 0 !important;
+                flex: none !important;
+                box-sizing: border-box !important;
             }
             .print-header-table td {
-                border: 1px solid black;
-                padding: 3px;
-                text-align: center;
-                vertical-align: middle;
+                border: 1px solid #000000 !important;
+                padding: 1.5px 3px !important;
+                text-align: center !important;
+                vertical-align: middle !important;
             }
-            .title-cell {
-                font-weight: bold;
-                font-size: 9pt;
+            .print-header-table .header-logo-cell {
+                width: 12% !important;
+                padding: 1px 2px !important;
+            }
+            .print-header-table .print-logo-img {
+                max-height: 30px !important;
+                max-width: 75px !important;
+                object-fit: contain !important;
+                display: block !important;
+                margin: 0 auto !important;
+            }
+            .print-header-table .title-cell {
+                width: 74% !important;
+                font-weight: bold !important;
+                font-size: 7.5pt !important;
                 text-align: left !important;
-                padding-left: 10px !important;
+                padding-left: 6px !important;
+                line-height: 1.15 !important;
             }
-            
-            /* Contenedor principal de la hoja impresa */
+            .print-header-table .header-version-cell {
+                width: 14% !important;
+                font-size: 6pt !important;
+                line-height: 1.1 !important;
+            }
+            .print-header-table .header-meta-row {
+                background-color: #f3f4f6 !important;
+                font-size: 6.5pt !important;
+            }
+            .print-header-table .header-meta-row td {
+                padding: 1px 2px !important;
+            }
+
+            /* Contenedor de contenido de la hoja impresa */
             .print-content-wrapper {
-                display: flex;
-                flex-direction: column;
-                flex-grow: 1;
-                overflow: hidden;
-            }
-
-            /* Tabla de Datos */
-            .table-scroll-wrap {
-                margin-bottom: 5px !important;
-                flex: 0 0 38% !important;
-                overflow: hidden !important; 
-            }
-            .data-table {
-                border: 1px solid black !important;
-                height: 100%;
-            }
-            .data-table th, .data-table td {
-                border: 1px solid black !important;
-                padding: 3px 4px !important;
-                font-size: 0.75rem !important;
-            }
-
-            /* Gráficas al máximo */
-            .charts-grid {
                 display: flex !important;
-                flex-wrap: wrap !important;
-                flex: 0 0 60% !important;
-                gap: 5px !important;
-                align-content: stretch;
+                flex-direction: column !important;
+                flex: 1 1 auto !important;
+                width: 100% !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
             }
-            .chart-card {
-                flex: 1 1 48% !important;
-                display: flex;
-                flex-direction: column;
+
+            /* Tabla de Datos Completa (Sin recortes horizontales ni verticales) */
+            .print-content-wrapper .table-scroll-wrap {
+                margin: 0 0 2mm 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                overflow: visible !important;
+                flex: none !important;
+                box-sizing: border-box !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .print-content-wrapper .data-table {
+                width: 100% !important;
+                table-layout: fixed !important;
+                border-collapse: collapse !important;
+                border: 1.5px solid #000000 !important;
+                font-family: Arial, Helvetica, sans-serif !important;
+                font-size: 5.8pt !important;
                 margin: 0 !important;
-                padding: 4px !important;
-                border: 1px solid #ccc !important;
+                box-sizing: border-box !important;
             }
-            .chart-container {
-                flex-grow: 1 !important;
-                height: auto !important;
-                min-height: 100px;
+            .print-content-wrapper .data-table th,
+            .print-content-wrapper .data-table td {
+                border: 1px solid #475569 !important;
+                padding: 1px 0.5px !important;
+                font-size: 5.8pt !important;
+                line-height: 1.12 !important;
+                text-align: center !important;
+                vertical-align: middle !important;
+                overflow: hidden !important;
+                white-space: nowrap !important;
+                box-sizing: border-box !important;
             }
-            .chart-container img {
-                max-width: 100% !important;
+            .print-content-wrapper .data-table th {
+                background-color: #e2e8f0 !important;
+                font-weight: 700 !important;
+                font-size: 5.5pt !important;
+                color: #0f172a !important;
+            }
+            .print-content-wrapper .data-table th:first-child,
+            .print-content-wrapper .data-table td:first-child {
+                width: 78px !important;
+                min-width: 78px !important;
+                max-width: 78px !important;
+                text-align: left !important;
+                padding-left: 2px !important;
+                font-weight: 700 !important;
+                font-size: 6pt !important;
+                background-color: #f8fafc !important;
+                color: #1e293b !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+            }
+            .print-content-wrapper .data-table tr.meta-highlight-row td,
+            .print-content-wrapper .data-table td.row-label-blue {
+                background-color: #eff6ff !important;
+                font-weight: 700 !important;
+            }
+            .print-content-wrapper .data-table td.cell-ok {
+                background-color: #dcfce7 !important;
+                color: #166534 !important;
+                font-weight: 700 !important;
+            }
+            .print-content-wrapper .data-table td.cell-warn {
+                background-color: #fef9c3 !important;
+                color: #854d0e !important;
+                font-weight: 700 !important;
+            }
+            .print-content-wrapper .data-table td.cell-bad {
+                background-color: #fee2e2 !important;
+                color: #991b1b !important;
+                font-weight: 700 !important;
+            }
+
+            /* Gráficas Organizadas Debajo (Cuadrícula 3x2 compacta para 6 gráficas) */
+            .print-content-wrapper .charts-grid {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 1.5mm 2.2mm !important;
+                width: 100% !important;
+                flex: 1 1 auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
+                align-content: start !important;
+            }
+            .print-content-wrapper .chart-card {
+                height: 52mm !important;
+                max-height: 52mm !important;
+                min-height: 52mm !important;
+                padding: 1mm 1.5mm !important;
+                margin: 0 !important;
+                border: 1px solid #cbd5e1 !important;
+                border-radius: 4px !important;
+                background: #ffffff !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+                flex-direction: column !important;
+                box-shadow: none !important;
+                overflow: hidden !important;
+            }
+            .print-content-wrapper .chart-container {
+                flex: 1 1 auto !important;
+                height: 100% !important;
                 max-height: 100% !important;
-                height: auto !important;
+                width: 100% !important;
+                position: relative !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+            }
+            .print-content-wrapper .chart-container img,
+            .print-content-wrapper .chart-container canvas {
+                width: 100% !important;
+                height: 100% !important;
+                max-height: 100% !important;
+                object-fit: contain !important;
                 display: block !important;
                 margin: 0 auto !important;
             }
@@ -863,7 +997,7 @@
             }
         }
         
-        /* Estado mientras se preparan las gráficas para forzar su renderizado */
+        /* Estado mientras se preparan las gráficas para forzar su renderizado en dimensiones horizontales exactas */
         body.is-printing .app-header, 
         body.is-printing .sidebar, 
         body.is-printing .content-area,
@@ -875,9 +1009,177 @@
             position: absolute;
             top: 0;
             left: 0;
+            width: 277mm;
+            max-width: 277mm;
+            z-index: 99999;
+            background: #ffffff;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+        body.is-printing .print-page {
+            width: 277mm;
+            max-width: 277mm;
+            height: 195mm;
+            max-height: 195mm;
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0 0 10px 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #ffffff;
+        }
+        body.is-printing .print-header-table {
             width: 100%;
-            z-index: 9999;
-            background: white;
+            border-collapse: collapse;
+            border: 1.5px solid #000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 7pt;
+            line-height: 1.15;
+            margin-bottom: 1.5mm;
+        }
+        body.is-printing .print-header-table td {
+            border: 1px solid #000;
+            padding: 1.5px 3px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        body.is-printing .print-header-table .header-logo-cell {
+            width: 12%;
+            padding: 1px 2px;
+        }
+        body.is-printing .print-header-table .print-logo-img {
+            max-height: 30px;
+            max-width: 75px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
+        body.is-printing .print-header-table .title-cell {
+            width: 74%;
+            font-weight: bold;
+            font-size: 7.5pt;
+            text-align: left;
+            padding-left: 6px;
+            line-height: 1.15;
+        }
+        body.is-printing .print-header-table .header-version-cell {
+            width: 14%;
+            font-size: 6pt;
+            line-height: 1.1;
+        }
+        body.is-printing .print-header-table .header-meta-row {
+            background-color: #f3f4f6;
+            font-size: 6.5pt;
+        }
+        body.is-printing .print-header-table .header-meta-row td {
+            padding: 1px 2px;
+        }
+        body.is-printing .print-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            width: 100%;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        body.is-printing .table-scroll-wrap {
+            margin: 0 0 2mm 0;
+            padding: 0;
+            width: 100%;
+            overflow: visible;
+            flex: none;
+            box-sizing: border-box;
+            box-shadow: none;
+            border: none;
+        }
+        body.is-printing .data-table {
+            width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            border: 1.5px solid #000;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 5.8pt;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        body.is-printing .data-table th,
+        body.is-printing .data-table td {
+            border: 1px solid #475569;
+            padding: 1px 0.5px;
+            font-size: 5.8pt;
+            line-height: 1.12;
+            text-align: center;
+            vertical-align: middle;
+            overflow: hidden;
+            white-space: nowrap;
+            box-sizing: border-box;
+        }
+        body.is-printing .data-table th {
+            background-color: #e2e8f0;
+            font-weight: 700;
+            font-size: 5.5pt;
+            color: #0f172a;
+        }
+        body.is-printing .data-table th:first-child,
+        body.is-printing .data-table td:first-child {
+            width: 78px;
+            min-width: 78px;
+            max-width: 78px;
+            text-align: left;
+            padding-left: 2px;
+            font-weight: 700;
+            font-size: 6pt;
+            background-color: #f8fafc;
+            color: #1e293b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        body.is-printing .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5mm 2.2mm;
+            width: 100%;
+            flex: 1 1 auto;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            align-content: start;
+        }
+        body.is-printing .chart-card {
+            height: 52mm;
+            max-height: 52mm;
+            min-height: 52mm;
+            padding: 1mm 1.5mm;
+            margin: 0;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            background: #ffffff;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            box-shadow: none;
+            overflow: hidden;
+        }
+        body.is-printing .chart-container {
+            flex: 1 1 auto;
+            height: 100%;
+            max-height: 100%;
+            width: 100%;
+            position: relative;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body.is-printing .chart-container canvas,
+        body.is-printing .chart-container img {
+            width: 100%;
+            height: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
         }
         /* ── RESPONSIVE DESIGN (MÓVIL) ── */
         .mobile-menu-btn {
@@ -1047,7 +1349,7 @@
                     <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
                     <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
                 </svg>
-                Subir Local
+                <span>Subir Local</span>
                 <input id="file-upload" type="file" style="display:none" accept=".xlsx,.xlsm,.xls" />
             </label>
 
@@ -1169,6 +1471,14 @@
 
         if (window.ChartAnnotation) Chart.register(window.ChartAnnotation);
 
+        function parseNumericValue(v) {
+            if (v === null || v === undefined || v === '') return NaN;
+            if (typeof v === 'number') return v;
+            let s = String(v).replace(/%/g, '').trim();
+            if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+            return (isFinite(s) && s !== '') ? parseFloat(s) : NaN;
+        }
+
         /* ── NAVEGACIÓN DE PESTAÑAS ── */
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1279,6 +1589,7 @@
                 req.onerror = e => reject(e.target.error);
             })).catch(() => {});
         }
+
 
         /* ── GESTIÓN DE ALMACENAMIENTO DE MESES EN DISPOSITIVO (OFFLINE) ── */
         function saveMonthToDB(monthKey, filename, arrayBuffer, source = 'server') {
@@ -1633,12 +1944,13 @@
         function handleFile(e) {
             const file = e.target.files[0];
             if (!file) return;
-            clearFile(false);
+
             loadingEl.style.display = 'flex';
             const reader = new FileReader();
             reader.onload = async ev => {
                 try {
                     const buf = ev.target.result;
+                    clearFile(false);
                     processAndDisplayWorkbook(buf, file.name);
                     await saveFileToDB(file.name, buf, 'local');
                     const detected = detectMonthFromFileName(file.name);
@@ -1904,13 +2216,6 @@
             return 'Desc.';
         }
 
-        const parseNumericValue = v => {
-            if (v === null || v === undefined || v === '') return NaN;
-            if (typeof v === 'number') return v;
-            let s = String(v).replace(/%/g, '').trim();
-            if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
-            return (isFinite(s) && s !== '') ? parseFloat(s) : NaN;
-        };
         const cleanSumaText = v => typeof v === 'string' ? v.replace(/^[Ss][uú]ma\s+de\s+/i, '').replace(/^[Ss][uú]ma\s+/i, '') : v;
         const cleanSheetData = d => Array.isArray(d) ? d.map(r => Array.isArray(r) ? r.map(cleanSumaText) : r) : d;
 
@@ -2205,26 +2510,47 @@
         }
 
         function findRowIndices(data) {
-            const findRowIdx = (...searchTerms) => data.findIndex(row => {
-                if (!row || !row[0]) return false;
-                const label = String(row[0]).toLowerCase();
-                return searchTerms.some(term => label.includes(term));
-            });
+            const cleanStr = (s) => {
+                if (s === null || s === undefined) return '';
+                return String(s)
+                    .toLowerCase()
+                    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '');
+            };
+            const findRowIdx = (...searchTerms) => {
+                const terms = searchTerms.map(cleanStr);
+                return data.findIndex(row => {
+                    if (!row || !row[0]) return false;
+                    const label = cleanStr(row[0]);
+                    return terms.some(term => label.includes(term));
+                });
+            };
             return {
                 ceEsp: findRowIdx('ce esperada', 'ce esperado'),
-                ceDre: findRowIdx('ce drenaje', 'ce emisor'),
+                ceEmisor: findRowIdx('ce emisor'),
+                ceDrenaje: findRowIdx('ce drenaje'),
                 phEsp: findRowIdx('ph esperada', 'ph esperado'),
-                phDre: findRowIdx('ph drenaje', 'ph emisor'),
-                ejecucion: findRowIdx('% ejecución', '% ejecucion', 'ejecución'),
+                phEmisor: findRowIdx('ph emisor'),
+                phDrenaje: findRowIdx('ph drenaje'),
+
+                vol1: findRowIdx('volumen 1'),
+                volProg: findRowIdx('vol prog', 'volumen prog'),
+                volEjec: findRowIdx('volumen ejecutado', 'volumen de riego'),
+                volDre: findRowIdx('volumen drenaje'),
+
+                ejecucion: findRowIdx('% ejecucion', 'ejecucion'),
                 no3: findRowIdx('n-no3', 'no3'),
+                pctDrenaje: findRowIdx('% drenaje', 'porcentaje de drenaje'),
+
+                // Retrocompatibilidad con reportes y tablas existentes
+                ceDre: findRowIdx('ce drenaje', 'ce emisor'),
+                phDre: findRowIdx('ph drenaje', 'ph emisor'),
                 vol: findRowIdx('volumen ejecutado', 'volumen de riego'),
-                
                 ceDrenajeReal: findRowIdx('ce drenaje'),
                 ceEmisorReal: findRowIdx('ce emisor'),
                 phDrenajeReal: findRowIdx('ph drenaje'),
-                phEmisorReal: findRowIdx('ph emisor'),
-
-                pctDrenaje: findRowIdx('% drenaje', 'porcentaje de drenaje')
+                phEmisorReal: findRowIdx('ph emisor')
             };
         }
 
@@ -2244,8 +2570,11 @@
                         <span class="context-pill context-valve">🚰 ${meta.valveLabel}</span>
                         <span class="context-pill context-variety">🌸 Variedad: ${meta.variety || 'Desc.'}</span>
                     </div>
-                    <div class="valve-context-right">
+                    <div class="valve-context-right" style="display:flex; align-items:center; gap:8px;">
                         <span class="sheet-pill-tag">Hoja: <strong>${meta.sheetName}</strong></span>
+                        <button class="upload-btn" onclick="generatePrintSingleValve('${meta.sheetName}')" style="background:#0284c7; color:white; border-color:#0369a1; padding:4px 10px; font-size:0.75rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" title="Imprimir solo esta válvula en 1 hoja horizontal (PDF)">
+                            🖨️ Imprimir Válvula (PDF)
+                        </button>
                     </div>
                 `;
                 sheetContentContainer.appendChild(banner);
@@ -2263,10 +2592,10 @@
         }
 
         /* ── TABLA ── */
-        function createTable(container, data, indices) {
+        function createTable(container, data, indices, isForPrint = false) {
             const wrap = document.createElement('div');
             wrap.className = 'table-scroll-wrap';
-            wrap.style.marginBottom = '16px';
+            wrap.style.marginBottom = isForPrint ? '2mm' : '16px';
             const table = document.createElement('table');
             table.className = 'data-table';
             
@@ -2277,9 +2606,29 @@
                 ? data[headerRowIndex]
                 : (data[0] || []);
 
+            // Determinar la última columna válida con datos o fecha para no renderizar columnas fantasma vacías
+            let maxCol = headerSourceRow.length;
+            while (maxCol > 1) {
+                const cIdx = maxCol - 1;
+                const hVal = headerSourceRow[cIdx];
+                const hasHeader = hVal !== null && hVal !== undefined && String(hVal).trim() !== '';
+                const hasData = data.some(r => r && r[cIdx] !== null && r[cIdx] !== undefined && String(r[cIdx]).trim() !== '');
+                if (hasHeader || hasData) break;
+                maxCol--;
+            }
+
             const thead = document.createElement('thead');
             const hr = document.createElement('tr');
-            headerSourceRow.forEach(h => { const th = document.createElement('th'); th.textContent = h ?? ''; hr.appendChild(th); });
+            for (let ci = 0; ci < maxCol; ci++) {
+                const h = headerSourceRow[ci];
+                const th = document.createElement('th');
+                let text = h ?? '';
+                if (isForPrint && typeof text === 'string' && ci > 0) {
+                    text = text.replace(/\/20(\d\d)/, '/$1');
+                }
+                th.textContent = text;
+                hr.appendChild(th);
+            }
             thead.appendChild(hr);
             table.appendChild(thead);
             
@@ -2299,7 +2648,8 @@
                 const tr = document.createElement('tr');
                 if (isMetaRow) tr.classList.add('meta-highlight-row');
 
-                rowData.forEach((cell, ci) => {
+                for (let ci = 0; ci < maxCol; ci++) {
+                    const cell = rowData[ci];
                     const td = document.createElement('td');
                     td.textContent = cell ?? '';
                     if (ci > 0) {
@@ -2328,7 +2678,7 @@
                         td.classList.add('row-label-blue');
                     }
                     tr.appendChild(td);
-                });
+                }
                 if (origIdx === 1 && !isMetaRow) tr.querySelectorAll('td').forEach(td => td.classList.add('row-label-blue'));
                 tbody.appendChild(tr);
             });
@@ -2337,7 +2687,7 @@
             container.appendChild(wrap);
         }
 
-        /* ── GRÁFICAS POR VÁLVULA ── */
+        /* ── GRÁFICAS POR VÁLVULA (6 GRÁFICAS ORGANIZADAS) ── */
         function createCharts(container, data, sheetName, indices, isForPrint = false) {
             const meta = sheetsMetadata[sheetName] || (sheetName ? { valveNumber: (sheetName.match(/\((\d+)\)/) ? parseInt(sheetName.match(/\((\d+)\)/)[1]) : null) } : {});
             const valveNumber = meta.valveNumber;
@@ -2346,39 +2696,133 @@
             const grid = document.createElement('div');
             grid.className = 'charts-grid';
             container.appendChild(grid);
+
             const cleanValue = (v, isPct = false) => {
                 const n = parseNumericValue(v);
                 if (isNaN(n) || n === 0) return null;
-                if (isPct && Math.abs(n) <= 1 && v !== '0' && v !== 0) return n * 100;
+                const hasPct = typeof v === 'string' && v.includes('%');
+                if (isPct && !hasPct && Math.abs(n) <= 3) return n * 100;
                 return n;
             };
+
             const configs = [];
             const headerRowIndex = findDateHeaderRowIndex(data);
-            
+
+            // 1. Conductividad Eléctrica (CE)
             const ceRows = [];
-            if (indices.ceEmisorReal !== -1) ceRows.push(indices.ceEmisorReal);
-            if (indices.ceDrenajeReal !== -1) ceRows.push(indices.ceDrenajeReal);
-            
+            if (indices.ceEmisor !== -1) ceRows.push(indices.ceEmisor);
+            else if (indices.ceEmisorReal !== -1) ceRows.push(indices.ceEmisorReal);
+            if (indices.ceDrenaje !== -1) ceRows.push(indices.ceDrenaje);
+            else if (indices.ceDrenajeReal !== -1) ceRows.push(indices.ceDrenajeReal);
+
             if (ceRows.length > 0) {
-                configs.push({ id: 'ce', title: 'Conductividad Eléctrica', headerRowIndex, dataRowIndices: ceRows, maxRow: Math.max(...ceRows), colors: ['#0ea5e9', '#f97316'], isPercentage: false });
+                configs.push({
+                    id: 'ce',
+                    title: 'Conductividad Eléctrica (CE)',
+                    headerRowIndex,
+                    dataRowIndices: ceRows,
+                    maxRow: Math.max(...ceRows),
+                    colors: ['#0ea5e9', '#f97316'],
+                    isPercentage: false
+                });
             } else if (indices.ceDre !== -1) {
-                configs.push({ id: 'ce', title: 'Conductividad Eléctrica', headerRowIndex, dataRowIndices: [indices.ceDre], maxRow: indices.ceDre, colors: ['#f97316'], isPercentage: false });
+                configs.push({
+                    id: 'ce',
+                    title: 'Conductividad Eléctrica (CE)',
+                    headerRowIndex,
+                    dataRowIndices: [indices.ceDre],
+                    maxRow: indices.ceDre,
+                    colors: ['#f97316'],
+                    isPercentage: false
+                });
             }
 
+            // 2. pH
             const phRows = [];
-            if (indices.phEmisorReal !== -1) phRows.push(indices.phEmisorReal);
-            if (indices.phDrenajeReal !== -1) phRows.push(indices.phDrenajeReal);
-            
+            if (indices.phEmisor !== -1) phRows.push(indices.phEmisor);
+            else if (indices.phEmisorReal !== -1) phRows.push(indices.phEmisorReal);
+            if (indices.phDrenaje !== -1) phRows.push(indices.phDrenaje);
+            else if (indices.phDrenajeReal !== -1) phRows.push(indices.phDrenajeReal);
+
             if (phRows.length > 0) {
-                configs.push({ id: 'ph', title: 'pH', headerRowIndex, dataRowIndices: phRows, maxRow: Math.max(...phRows), colors: ['#8b5cf6', '#ec4899'], isPercentage: false });
+                configs.push({
+                    id: 'ph',
+                    title: 'pH',
+                    headerRowIndex,
+                    dataRowIndices: phRows,
+                    maxRow: Math.max(...phRows),
+                    colors: ['#8b5cf6', '#ec4899'],
+                    isPercentage: false
+                });
             } else if (indices.phDre !== -1) {
-                configs.push({ id: 'ph', title: 'pH', headerRowIndex, dataRowIndices: [indices.phDre], maxRow: indices.phDre, colors: ['#ec4899'], isPercentage: false });
+                configs.push({
+                    id: 'ph',
+                    title: 'pH',
+                    headerRowIndex,
+                    dataRowIndices: [indices.phDre],
+                    maxRow: indices.phDre,
+                    colors: ['#ec4899'],
+                    isPercentage: false
+                });
             }
 
-            if (indices.ejecucion !== -1) configs.push({ id: 'ejecucion', title: '% Ejecución', headerRowIndex, dataRowIndices: [indices.ejecucion], maxRow: indices.ejecucion, colors: ['#8b5cf6'], isPercentage: true });
-            if (indices.no3 !== -1) configs.push({ id: 'no3', title: 'N-NO3', headerRowIndex, dataRowIndices: [indices.no3], maxRow: indices.no3, colors: ['#f97316'], isPercentage: false });
-            if (indices.vol !== -1) configs.push({ id: 'volumen', title: 'Volumen Ejecutado (L/Cama)', headerRowIndex, dataRowIndices: [indices.vol], maxRow: indices.vol, colors: ['#0ea5e9'], isPercentage: false });
-            if (indices.pctDrenaje !== -1) configs.push({ id: 'pct_drenaje', title: '% Drenaje', headerRowIndex, dataRowIndices: [indices.pctDrenaje], maxRow: indices.pctDrenaje, colors: ['#22c55e'], isPercentage: true });
+            // 3. Volúmenes (Solo Volumen Programado y Volumen Ejecutado)
+            const volRows = [];
+            const volColors = [];
+            if (indices.volProg !== -1) { volRows.push(indices.volProg); volColors.push('#6366f1'); }
+            if (indices.volEjec !== -1) { volRows.push(indices.volEjec); volColors.push('#0ea5e9'); }
+            else if (indices.vol !== -1) { volRows.push(indices.vol); volColors.push('#0ea5e9'); }
+
+            if (volRows.length > 0) {
+                configs.push({
+                    id: 'volumen',
+                    title: 'Volumen (Prog vs Ejec)',
+                    headerRowIndex,
+                    dataRowIndices: volRows,
+                    maxRow: Math.max(...volRows),
+                    colors: volColors,
+                    isPercentage: false
+                });
+            }
+
+            // 4. % Ejecución
+            if (indices.ejecucion !== -1) {
+                configs.push({
+                    id: 'ejecucion',
+                    title: '% Ejecución',
+                    headerRowIndex,
+                    dataRowIndices: [indices.ejecucion],
+                    maxRow: indices.ejecucion,
+                    colors: ['#8b5cf6'],
+                    isPercentage: true
+                });
+            }
+
+            // 5. N-NO3
+            if (indices.no3 !== -1) {
+                configs.push({
+                    id: 'no3',
+                    title: 'N-NO3 (ppm)',
+                    headerRowIndex,
+                    dataRowIndices: [indices.no3],
+                    maxRow: indices.no3,
+                    colors: ['#f97316'],
+                    isPercentage: false
+                });
+            }
+
+            // 6. % Drenaje
+            if (indices.pctDrenaje !== -1) {
+                configs.push({
+                    id: 'pct_drenaje',
+                    title: '% Drenaje',
+                    headerRowIndex,
+                    dataRowIndices: [indices.pctDrenaje],
+                    maxRow: indices.pctDrenaje,
+                    colors: ['#10b981'],
+                    isPercentage: true
+                });
+            }
 
             configs.forEach(cfg => {
                 if (data.length <= cfg.maxRow) return;
@@ -2386,34 +2830,52 @@
                 const dRows = cfg.dataRowIndices.map(i => data[i]);
                 if (!hRow || dRows.some(r => !r)) return;
                 const labels = [], dsData = dRows.map(() => []);
-                
+
                 const maxCol = Math.max(hRow?.length || 0, ...dRows.map(r => r ? r.length : 0));
                 for (let i = 1; i < maxCol; i++) {
                     const isAllEmpty = dRows.every(row => row[i] === null || row[i] === undefined || String(row[i]).trim() === '');
                     if (isAllEmpty) continue;
                     let hVal = (hRow && hRow[i] !== null && hRow[i] !== undefined) ? String(hRow[i]).trim() : '';
+                    if (isForPrint && hVal !== '') {
+                        hVal = hVal.replace(/\/20(\d\d)/, '/$1').replace(/^(\d{4})-(\d{2})-(\d{2}).*$/, '$3/$2');
+                    }
                     labels.push(hVal !== '' ? hVal : `S${i}`);
                     dRows.forEach((row, j) => dsData[j].push(cleanValue(row[i], cfg.isPercentage)));
                 }
-                const datasets = dRows.map((row, i) => ({
-                    label: row[0]?.trim() ?? `Serie ${i+1}`,
-                    data: dsData[i],
-                    fill: false,
-                    borderColor: cfg.colors[i % cfg.colors.length],
-                    backgroundColor: cfg.colors[i % cfg.colors.length],
-                    tension: 0.2,
-                    spanGaps: true,
-                    pointRadius: 3,
-                    borderWidth: 2
-                }));
+
+                const datasets = dRows.map((row, i) => {
+                    let lbl = row[0] ? String(row[0]).trim() : `Serie ${i+1}`;
+                    lbl = lbl.replace(/^suma\s+de\s+/i, '');
+                    return {
+                        label: lbl,
+                        data: dsData[i],
+                        fill: false,
+                        borderColor: cfg.colors[i % cfg.colors.length],
+                        backgroundColor: cfg.colors[i % cfg.colors.length],
+                        tension: 0.2,
+                        spanGaps: true,
+                        pointRadius: isForPrint ? 1.5 : 3,
+                        borderWidth: isForPrint ? 1.2 : 2
+                    };
+                });
+
                 const card = document.createElement('div');
                 card.className = 'chart-card';
                 const wrap = document.createElement('div');
                 wrap.className = 'chart-container';
                 const canvas = document.createElement('canvas');
+
+                if (isForPrint) {
+                    canvas.width = 460;
+                    canvas.height = 240;
+                    canvas.style.width = '100%';
+                    canvas.style.height = '100%';
+                }
+
                 wrap.appendChild(canvas);
                 card.appendChild(wrap);
                 grid.appendChild(card);
+
                 const yAxis = { ticks: {} };
                 if (cfg.isPercentage) yAxis.ticks.callback = v => v.toFixed(0) + '%';
                 if (cfg.yMin !== undefined) yAxis.min = cfg.yMin;
@@ -2424,53 +2886,101 @@
                 if (cfg.id === 'ce' && limits.ce) {
                     annotations.box1 = {
                         type: 'box', yMin: limits.ce[0], yMax: limits.ce[1],
-                        backgroundColor: 'rgba(34, 197, 94, 0.2)', borderColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 1, drawTime: 'beforeDatasetsDraw'
+                        backgroundColor: 'rgba(34, 197, 94, 0.18)', borderColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 1, drawTime: 'beforeDatasetsDraw'
                     };
-                    annotations.line1 = { type: 'line', yMin: limits.ce[0], yMax: limits.ce[0], borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
-                    annotations.line2 = { type: 'line', yMin: limits.ce[1], yMax: limits.ce[1], borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
+                    annotations.line1 = { type: 'line', yMin: limits.ce[0], yMax: limits.ce[0], borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 1.5, borderDash: [4, 3] };
+                    annotations.line2 = { type: 'line', yMin: limits.ce[1], yMax: limits.ce[1], borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 1.5, borderDash: [4, 3] };
+                }
+                if (cfg.id === 'ph') {
+                    annotations.box1 = {
+                        type: 'box', yMin: 5.5, yMax: 6.5,
+                        backgroundColor: 'rgba(34, 197, 94, 0.18)', borderColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 1, drawTime: 'beforeDatasetsDraw'
+                    };
+                    annotations.line1 = { type: 'line', yMin: 5.5, yMax: 5.5, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 1.5, borderDash: [4, 3] };
+                    annotations.line2 = { type: 'line', yMin: 6.5, yMax: 6.5, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 1.5, borderDash: [4, 3] };
+                }
+                if (cfg.id === 'ejecucion') {
+                    annotations.box1 = {
+                        type: 'box', yMin: 90, yMax: 110,
+                        backgroundColor: 'rgba(34, 197, 94, 0.18)', borderColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 1, drawTime: 'beforeDatasetsDraw'
+                    };
+                    annotations.line1 = { type: 'line', yMin: 90, yMax: 90, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 1.5, borderDash: [4, 3] };
+                    annotations.line2 = { type: 'line', yMin: 110, yMax: 110, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 1.5, borderDash: [4, 3] };
+                }
+                if (cfg.id === 'pct_drenaje') {
+                    annotations.box1 = {
+                        type: 'box', yMin: 45, yMax: 60,
+                        backgroundColor: 'rgba(34, 197, 94, 0.18)', borderColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 1, drawTime: 'beforeDatasetsDraw'
+                    };
+                    annotations.line1 = { type: 'line', yMin: 45, yMax: 45, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 1.5, borderDash: [4, 3] };
+                    annotations.line2 = { type: 'line', yMin: 60, yMax: 60, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 1.5, borderDash: [4, 3] };
                 }
                 if (cfg.id === 'no3' && limits.no3) {
                     yAxis.max = Math.max(300, limits.no3[1] + 50);
                     annotations.box1 = {
                         type: 'box', yMin: limits.no3[0], yMax: limits.no3[1],
-                        backgroundColor: 'rgba(34, 197, 94, 0.2)', borderColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 1, drawTime: 'beforeDatasetsDraw'
+                        backgroundColor: 'rgba(34, 197, 94, 0.18)', borderColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 1, drawTime: 'beforeDatasetsDraw'
                     };
-                    annotations.line1 = { type: 'line', yMin: limits.no3[0], yMax: limits.no3[0], borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
-                    annotations.line2 = { type: 'line', yMin: limits.no3[1], yMax: limits.no3[1], borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
-                }
-                if (cfg.id === 'ph') {
-                    annotations.box1 = {
-                        type: 'box', yMin: 5.5, yMax: 6.5,
-                        backgroundColor: 'rgba(34, 197, 94, 0.2)', borderColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 1, drawTime: 'beforeDatasetsDraw'
-                    };
-                    annotations.line1 = { type: 'line', yMin: 5.5, yMax: 5.5, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
-                    annotations.line2 = { type: 'line', yMin: 6.5, yMax: 6.5, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
-                }
-                if (cfg.id === 'ejecucion') {
-                    annotations.box1 = {
-                        type: 'box', yMin: 90, yMax: 110,
-                        backgroundColor: 'rgba(34, 197, 94, 0.2)', borderColor: 'rgba(34, 197, 94, 0.6)', borderWidth: 1, drawTime: 'beforeDatasetsDraw'
-                    };
-                    annotations.line1 = { type: 'line', yMin: 90, yMax: 90, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
-                    annotations.line2 = { type: 'line', yMin: 110, yMax: 110, borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 2, borderDash: [6, 4] };
+                    annotations.line1 = { type: 'line', yMin: limits.no3[0], yMax: limits.no3[0], borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 1.5, borderDash: [4, 3] };
+                    annotations.line2 = { type: 'line', yMin: limits.no3[1], yMax: limits.no3[1], borderColor: 'rgba(21, 128, 61, 0.8)', borderWidth: 1.5, borderDash: [4, 3] };
                 }
 
                 const chartOptions = {
-                    responsive: true,
+                    responsive: !isForPrint,
                     maintainAspectRatio: false,
                     animation: isForPrint ? false : {},
                     scales: {
-                        y: yAxis,
-                        x: { type: 'category', ticks: { maxRotation: 60, minRotation: 40, font: { size: 10 } }, grid: { display: false } }
+                        y: Object.assign({}, yAxis, {
+                            ticks: Object.assign({}, yAxis.ticks, {
+                                font: { size: isForPrint ? 6.5 : 10 },
+                                padding: isForPrint ? 1.5 : 4
+                            }),
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.06)'
+                            }
+                        }),
+                        x: {
+                            type: 'category',
+                            ticks: {
+                                maxRotation: isForPrint ? 45 : 60,
+                                minRotation: isForPrint ? 45 : 40,
+                                font: { size: isForPrint ? 6 : 10 },
+                                padding: isForPrint ? 1 : 4,
+                                autoSkip: true,
+                                maxTicksLimit: isForPrint ? 16 : 31
+                            },
+                            grid: { display: false }
+                        }
                     },
                     plugins: {
-                        legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } },
-                        title: { display: true, text: cfg.title, font: { size: 13, weight: '700' }, color: '#1a1a1a', padding: { bottom: 8 } }
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                font: { size: isForPrint ? 6.5 : 10 },
+                                boxWidth: isForPrint ? 6 : 12,
+                                padding: isForPrint ? 2 : 6
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: cfg.title,
+                            font: { size: isForPrint ? 8 : 13, weight: '700' },
+                            color: '#1a1a1a',
+                            padding: { top: isForPrint ? 1 : 4, bottom: isForPrint ? 1 : 8 }
+                        }
+                    },
+                    layout: {
+                        padding: isForPrint ? { left: 1, right: 2, top: 0, bottom: 0 } : {}
                     }
                 };
 
                 if (Object.keys(annotations).length > 0) {
-                    chartOptions.plugins.annotation = { annotations };
+                    try {
+                        if (typeof Chart !== 'undefined' && Chart.registry && Chart.registry.getPlugin('annotation')) {
+                            chartOptions.plugins.annotation = { annotations };
+                        }
+                    } catch (e) {}
                 }
 
                 const ch = new Chart(canvas.getContext('2d'), {
@@ -2869,6 +3379,8 @@
             mkBarChart('Cumplimiento Conductividad Eléctrica', sortedKeys.map(k => allValveData[k].ce), getColors(sortedKeys.map(k => allValveData[k].ce)), 'Cumplimiento (%)', 150, 90, 110);
             mkBarChart('Cumplimiento pH', sortedKeys.map(k => allValveData[k].ph), getColors(sortedKeys.map(k => allValveData[k].ph)), 'Cumplimiento (%)', 150, 90, 110);
             mkBarChart('Valor Promedio N-NO3', sortedKeys.map(k => allValveData[k].nno3), getNNO3Colors(sortedKeys.map(k => allValveData[k].nno3), sortedKeys), 'Valor Promedio', 300, null, null);
+
+
         }
 
         // Listeners para filtros de gráficas
@@ -2887,18 +3399,120 @@
     <div id="print-container" style="display: none;"></div>
     
     <script>
+        function buildPrintPage(meta, year, monthText, container = null) {
+            const page = document.createElement('div');
+            page.className = 'print-page';
+            
+            // Encabezado formal de impresión para Flores El Ciprés
+            page.innerHTML = `
+                <table class="print-header-table">
+                    <tr>
+                        <td rowspan="2" class="header-logo-cell">
+                            <img src="logo_cipres_clean.png" alt="Logo Flores El Ciprés" class="print-logo-img">
+                        </td>
+                        <td colspan="5" class="title-cell">
+                            FLORES EL CIPRÉS S.A.S<br>
+                            CONTROL DEL FERTIRRIEGO ROSA HIDROPONÍA<br>
+                            PRODUCCIÓN ROSA
+                        </td>
+                        <td class="header-version-cell">Versión 2<br>Diciembre 2023<br>Página 1 de 1</td>
+                    </tr>
+                    <tr class="header-meta-row">
+                        <td>AÑO: <strong>${year}</strong></td>
+                        <td>MES: <strong>${monthText.toUpperCase()}</strong></td>
+                        <td>SECTOR: <strong>${meta.sectorLabel}</strong></td>
+                        <td>BLOQUE: <strong>${meta.blockLabel}</strong></td>
+                        <td>VÁLVULA: <strong>${meta.valveNumber}</strong></td>
+                    </tr>
+                </table>
+            `;
+
+            // Si se pasa container, adjuntar al DOM inmediatamente para que los lienzos tengan tamaño y contexto real
+            if (container) {
+                container.appendChild(page);
+            }
+
+            const ws = workbookData.Sheets[meta.sheetName];
+            const json = getSheetJson(ws);
+            if (json.length > 0) {
+                const indices = findRowIndices(json);
+                const contentWrapper = document.createElement('div');
+                contentWrapper.className = 'print-content-wrapper';
+                page.appendChild(contentWrapper);
+                
+                // Pasamos true como cuarto argumento (isForPrint) para tabla compacta
+                createTable(contentWrapper, json, indices, true);
+                // Pasamos true como quinto argumento (isForPrint) para 6 gráficas 3x2 nítidas
+                createCharts(contentWrapper, json, meta.sheetName, indices, true);
+            } else {
+                const empty = document.createElement('div');
+                empty.style.padding = '20px';
+                empty.style.textAlign = 'center';
+                empty.style.color = '#64748b';
+                empty.textContent = "Hoja vacía o sin formato válido.";
+                page.appendChild(empty);
+            }
+            return page;
+        }
+
+        async function convertCanvasesToImages(container) {
+            const canvases = Array.from(container.querySelectorAll('canvas'));
+            const imgPromises = [];
+
+            canvases.forEach(canvas => {
+                try {
+                    if (canvas.width === 0 || canvas.height === 0) {
+                        console.warn('Canvas con dimensiones 0 ignorado');
+                        return;
+                    }
+                    const dataUrl = canvas.toDataURL('image/png', 1.0);
+                    if (!dataUrl || dataUrl === 'data:,' || dataUrl.length < 100) {
+                        console.warn('DataURL de canvas no válida, omitiendo conversión a imagen');
+                        return;
+                    }
+                    const img = document.createElement('img');
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '100%';
+                    img.style.objectFit = 'contain';
+                    img.style.display = 'block';
+                    img.style.margin = '0 auto';
+
+                    const p = new Promise(resolve => {
+                        img.onload = resolve;
+                        img.onerror = resolve;
+                    });
+                    imgPromises.push(p);
+
+                    img.src = dataUrl;
+                    if (canvas.parentNode) {
+                        canvas.parentNode.replaceChild(img, canvas);
+                    }
+                } catch (e) {
+                    console.error('Error convirtiendo canvas a imagen:', e);
+                }
+            });
+
+            if (imgPromises.length > 0) {
+                await Promise.all(imgPromises);
+            }
+        }
+
         async function generatePrintAllReport() {
             if (!workbookData || !validSheetMetas.length) return alert('Por favor, carga un archivo Excel primero.');
 
             const printBtn = document.getElementById('print-btn');
-            const originalText = printBtn.innerHTML;
-            printBtn.innerHTML = 'Preparando Páginas...';
-            printBtn.disabled = true;
+            const originalText = printBtn ? printBtn.innerHTML : 'Imprimir Todas (PDF)';
+            if (printBtn) {
+                printBtn.innerHTML = 'Preparando Páginas...';
+                printBtn.disabled = true;
+            }
 
             const printContainer = document.getElementById('print-container');
             printContainer.innerHTML = '';
             
-            // 1. Mostrar contenedor y aplicar la clase is-printing para asegurar dimensiones visibles en el DOM
+            // 1. Mostrar contenedor y aplicar clase is-printing para forzar dimensiones horizontales exactas
             document.body.classList.add('is-printing');
             printContainer.style.display = 'block';
 
@@ -2912,81 +3526,20 @@
             });
 
             const monthSelect = document.getElementById('month-select');
-            const selectedMonthVal = monthSelect.value || (typeof detectMonthFromFileName === 'function' && detectMonthFromFileName(document.getElementById('file-name')?.textContent)) || (typeof getCurrentMonthName === 'function' ? getCurrentMonthName() : 'SEPTIEMBRE');
+            const selectedMonthVal = (monthSelect && monthSelect.value) || (typeof detectMonthFromFileName === 'function' && detectMonthFromFileName(document.getElementById('file-name')?.textContent)) || (typeof getCurrentMonthName === 'function' ? getCurrentMonthName() : 'SEPTIEMBRE');
             const monthText = String(selectedMonthVal).toUpperCase();
             const year = new Date().getFullYear();
 
-            // Generar contenedor para cada hoja (válvula)
+            // Generar cada hoja (válvula) directamente adjuntada a printContainer
             sortedMetas.forEach(meta => {
-                const page = document.createElement('div');
-                page.className = 'print-page';
-                
-                // Encabezado formal de impresión para Flores El Ciprés
-                page.innerHTML = `
-                    <table class="print-header-table">
-                        <tr>
-                            <td rowspan="2" style="width: 15%; text-align: center; vertical-align: middle;">
-                                <img src="logo_cipres_clean.png" alt="Logo Flores El Ciprés" style="max-width: 95px; max-height: 65px; object-fit: contain;">
-                            </td>
-                            <td colspan="5" class="title-cell" style="width: 70%;">
-                                FLORES EL CIPRÉS S.A.S<br>
-                                CONTROL DEL FERTIRRIEGO ROSA HIDROPONÍA<br>
-                                PRODUCCIÓN ROSA
-                            </td>
-                            <td style="width: 15%;">Versión 2<br>Diciembre 2023<br>Página 1 de 1</td>
-                        </tr>
-                        <tr style="background-color: #f3f4f6;">
-                            <td>AÑO: <strong>${year}</strong></td>
-                            <td>MES: <strong>${monthText.toUpperCase()}</strong></td>
-                            <td>SECTOR: <strong>${meta.sectorLabel}</strong></td>
-                            <td>BLOQUE: <strong>${meta.blockLabel}</strong></td>
-                            <td>VÁLVULA: <strong>${meta.valveNumber}</strong></td>
-                        </tr>
-                    </table>
-                `;
-
-                const ws = workbookData.Sheets[meta.sheetName];
-                const json = getSheetJson(ws);
-                if (json.length > 0) {
-                    const indices = findRowIndices(json);
-                    
-                    const contentWrapper = document.createElement('div');
-                    contentWrapper.className = 'print-content-wrapper';
-                    
-                    createTable(contentWrapper, json, indices);
-                    // Pasamos true como quinto argumento (isForPrint) para desactivar la animación
-                    createCharts(contentWrapper, json, meta.sheetName, indices, true);
-                    
-                    page.appendChild(contentWrapper);
-                } else {
-                    const empty = document.createElement('div');
-                    empty.textContent = "Hoja vacía o sin formato válido.";
-                    page.appendChild(empty);
-                }
-                
-                printContainer.appendChild(page);
+                buildPrintPage(meta, year, monthText, printContainer);
             });
 
             // Dar un tiempo breve para el renderizado sincrónico del DOM
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 250));
 
             // 2. Convertir lienzos (<canvas>) a imágenes (<img>) en Base64 para garantizar que aparezcan impresas
-            const canvases = printContainer.querySelectorAll('canvas');
-            canvases.forEach(canvas => {
-                try {
-                    const img = document.createElement('img');
-                    img.src = canvas.toDataURL('image/png');
-                    img.style.maxWidth = '100%';
-                    img.style.maxHeight = '100%';
-                    img.style.display = 'block';
-                    img.style.margin = '0 auto';
-                    if (canvas.parentNode) {
-                        canvas.parentNode.replaceChild(img, canvas);
-                    }
-                } catch (e) {
-                    console.error('Error convirtiendo canvas a imagen:', e);
-                }
-            });
+            await convertCanvasesToImages(printContainer);
 
             await new Promise(r => setTimeout(r, 100));
 
@@ -2998,9 +3551,44 @@
                 document.body.classList.remove('is-printing');
                 printContainer.style.display = 'none';
                 printContainer.innerHTML = '';
-                printBtn.innerHTML = originalText;
-                printBtn.disabled = false;
-            }, 500);
+                if (printBtn) {
+                    printBtn.innerHTML = originalText;
+                    printBtn.disabled = false;
+                }
+            }, 600);
+        }
+
+        async function generatePrintSingleValve(sheetName) {
+            if (!workbookData || !sheetName) return alert('Por favor, selecciona una válvula primero.');
+            const meta = sheetsMetadata[sheetName];
+            if (!meta) return alert('No se encontraron metadatos para esta válvula.');
+
+            const printContainer = document.getElementById('print-container');
+            printContainer.innerHTML = '';
+            
+            document.body.classList.add('is-printing');
+            printContainer.style.display = 'block';
+
+            const monthSelect = document.getElementById('month-select');
+            const selectedMonthVal = (monthSelect && monthSelect.value) || (typeof detectMonthFromFileName === 'function' && detectMonthFromFileName(document.getElementById('file-name')?.textContent)) || (typeof getCurrentMonthName === 'function' ? getCurrentMonthName() : 'SEPTIEMBRE');
+            const monthText = String(selectedMonthVal).toUpperCase();
+            const year = new Date().getFullYear();
+
+            buildPrintPage(meta, year, monthText, printContainer);
+
+            await new Promise(r => setTimeout(r, 200));
+
+            await convertCanvasesToImages(printContainer);
+
+            await new Promise(r => setTimeout(r, 100));
+
+            window.print();
+
+            setTimeout(() => {
+                document.body.classList.remove('is-printing');
+                printContainer.style.display = 'none';
+                printContainer.innerHTML = '';
+            }, 600);
         }
 
         /* ── INICIALIZACIÓN Y RECUPERAR SESIÓN CON SOPORTE OFFLINE ── */
